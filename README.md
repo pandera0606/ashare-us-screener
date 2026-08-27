@@ -2,7 +2,7 @@
 
 给后续 Agent 与维护者用的项目说明。改功能时必须同步更新本文档，并在文末「版本记录」追加条目。更短的协作约定见 [AGENTS.md](AGENTS.md)。
 
-当前版本：**v0.1.13**（2026-08-28）
+当前版本：**v0.1.14**（2026-08-28）
 
 ## 1. 项目目标
 
@@ -39,7 +39,7 @@ tools/archive_index.py     把当前 index.html 拷到 archive/ 并写时间戳
 tools/serve.py             局域网静态服务（电脑开着时手机也可打开）
 tools/make_icons.py        生成主屏幕图标 PNG
 tools/pull_latest.ps1      本机从 GitHub 拉取云端日榜/简报
-tools/install_pull_task.ps1 注册 Windows 计划任务（工作日 8:20 + 登录时）
+tools/install_pull_task.ps1 注册 Windows 计划任务（工作日 7:00 + 登录时）
 manifest.json              网页应用清单（添加到主屏幕）
 sw.js                      Service Worker（仅 http/https，file:// 不注册）
 icons/                     主屏幕 / Apple Touch 图标
@@ -104,7 +104,7 @@ python tools/serve.py
 
 ### 3.2 本机看到云端日榜 / 简报
 
-工作日北京时间 **8:00**，Cursor 自动化把日榜和隔夜简报提交到 GitHub `main`。它改的是远程仓库，**不会**直接改这个 iCloud 文件夹。本机要再拉一次，双击 `index.html` 才是新数据。
+工作日北京时间 **6:30**，Cursor 自动化把日榜和隔夜简报提交到 GitHub `main`。它改的是远程仓库，**不会**直接改这个 iCloud 文件夹。本机要再拉一次，双击 `index.html` 才是新数据。
 
 两条任务前后衔接，不能合成一条：
 
@@ -118,9 +118,9 @@ python tools/serve.py
 powershell -ExecutionPolicy Bypass -File tools/install_pull_task.ps1
 ```
 
-触发：工作日 **8:20**（此时起最多轮询约 40 分钟，等云端提交到）；用户登录时再拉一次（电脑当时没开着的兜底）。也可手动运行 `tools/pull_latest.ps1 -Once`。日志在 `tools/pull_latest.log`，不进仓库。
+触发：工作日 **7:00**（此时起最多轮询约 40 分钟，等云端提交到）；用户登录时再拉一次（电脑当时没开着的兜底）。也可手动运行 `tools/pull_latest.ps1 -Once`。日志在 `tools/pull_latest.log`，不进仓库。
 
-电脑关机或休眠时 8:20 不会跑，登录后再拉。本机有未提交改动时脚本会先暂存再快进拉取，成功后恢复；冲突则远程数据留下，本机改动留在 stash，需手工处理。
+电脑关机或休眠时 7:00 不会跑，登录后再拉。本机有未提交改动时脚本会先暂存再快进拉取，成功后恢复；冲突则远程数据留下，本机改动留在 stash，需手工处理。
 
 卸载：
 
@@ -343,6 +343,11 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 做上述任何一项，都要改 README 版本记录，并核对 schema 是否向后兼容。IndexedDB 升版本时在 `store.js` 的 `onupgradeneeded` 写迁移，不要直接改 keyPath 导致旧笔记丢失。
 
 ## 9. 版本记录
+
+### v0.1.14 — 2026-08-28
+
+- 云端日榜/简报改为工作日北京时间 **6:30**；本机拉取计划任务改为 **7:00**（登录时仍再拉一次）。
+- 兼容性：IndexedDB 与数据文件未改。已注册过计划任务的电脑需再跑一次 `tools/install_pull_task.ps1`。Cursor 自动化的触发时间要在自动化页里改成 6:30。
 
 ### v0.1.13 — 2026-08-28
 

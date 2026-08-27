@@ -1,5 +1,5 @@
 ﻿# Register a Windows scheduled task that runs tools/pull_latest.ps1
-# weekday 08:20 (polls until the cloud commit lands) and again at user logon.
+# weekday 07:00 (polls until the cloud commit lands) and again at user logon.
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File tools/install_pull_task.ps1
 param(
@@ -36,7 +36,7 @@ $psExe = Get-PowerShellExe
 $arg = "-NoProfile -ExecutionPolicy Bypass -File `"$PullScript`""
 $action = New-ScheduledTaskAction -Execute $psExe -Argument $arg -WorkingDirectory $RepoRoot
 $userId = "$env:USERDOMAIN\$env:USERNAME"
-$morning = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday, Tuesday, Wednesday, Thursday, Friday -At "08:20"
+$morning = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday, Tuesday, Wednesday, Thursday, Friday -At "07:00"
 $logon = New-ScheduledTaskTrigger -AtLogOn -User $userId
 $settings = New-ScheduledTaskSettingsSet `
   -AllowStartIfOnBatteries `
@@ -50,11 +50,11 @@ $task = New-ScheduledTask `
   -Trigger @($morning, $logon) `
   -Settings $settings `
   -Principal $principal `
-  -Description "把 GitHub 上的日榜和隔夜简报拉回本机文件夹。工作日 8:20 轮询；登录时再拉一次。"
+  -Description "把 GitHub 上的日榜和隔夜简报拉回本机文件夹。工作日 7:00 轮询；登录时再拉一次。"
 
 Register-ScheduledTask -TaskName $TaskName -InputObject $task | Out-Null
 Write-Host "已注册计划任务 $TaskName"
 Write-Host "  脚本: $PullScript"
-Write-Host "  触发: 工作日 08:20；用户 $userId 登录时"
-Write-Host "  电脑关机或休眠时 8:20 不会跑，登录后再拉。"
+Write-Host "  触发: 工作日 07:00；用户 $userId 登录时"
+Write-Host "  电脑关机或休眠时 7:00 不会跑，登录后再拉。"
 Write-Host 'Uninstall: powershell -ExecutionPolicy Bypass -File tools/install_pull_task.ps1 -Uninstall'

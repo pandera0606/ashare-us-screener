@@ -88,7 +88,7 @@ function Resolve-PollMinutes {
   if ($PollMinutes -ge 0) { return $PollMinutes }
   $now = Get-Date
   $weekday = $now.DayOfWeek -ge [DayOfWeek]::Monday -and $now.DayOfWeek -le [DayOfWeek]::Friday
-  $inWindow = $now.TimeOfDay -ge [TimeSpan]::Parse("08:15") -and $now.TimeOfDay -lt [TimeSpan]::Parse("09:05")
+  $inWindow = $now.TimeOfDay -ge [TimeSpan]::Parse("06:55") -and $now.TimeOfDay -lt [TimeSpan]::Parse("07:45")
   if ($weekday -and $inWindow) { return 40 }
   return 0
 }
