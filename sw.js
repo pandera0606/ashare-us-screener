@@ -1,5 +1,5 @@
 /* 仅在 http/https 下由 app.js 注册。file:// 双击打开不会走这里。 */
-var CACHE = "ashare-us-screener-v0.1.10";
+var CACHE = "ashare-us-screener-v0.1.11";
 var PRECACHE = [
   "./",
   "./index.html",
