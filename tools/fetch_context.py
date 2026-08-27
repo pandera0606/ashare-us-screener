@@ -4,6 +4,7 @@
 Usage:
   python tools/fetch_context.py
   python tools/fetch_context.py --start 2026-08-17 --end 2026-08-25
+  python tools/fetch_context.py --quotes-only
 """
 from __future__ import print_function
 
@@ -121,7 +122,7 @@ def a_symbol(ticker):
     return "sz" + ticker
 
 
-def fetch_a_kline(ticker, bars=40):
+def fetch_a_kline(ticker, bars=50):
     code = a_symbol(ticker)
     param = "%s,day,,,%s,qfq" % (code, bars)
     urls = [
@@ -129,30 +130,32 @@ def fetch_a_kline(ticker, bars=40):
         "https://proxy.finance.qq.com/ifzqgtimg/appstock/app/newfqkline/get?param=" + param,
     ]
     last_err = None
-    for url in urls:
-        try:
-            data = http_json(url)
-        except Exception as e:
-            last_err = e
-            continue
-        inner = (data.get("data") or {}).get(code) or {}
-        if not inner and data.get("data"):
-            inner = next(iter(data["data"].values()), {}) or {}
-        rows = inner.get("qfqday") or inner.get("day") or []
-        by_date = {}
-        for row in rows:
-            if not row or len(row) < 6:
-                continue
+    for attempt in range(3):
+        for url in urls:
             try:
-                by_date[row[0]] = {
-                    "date": row[0],
-                    "close": float(row[2]),
-                }
-            except (TypeError, ValueError):
+                data = http_json(url)
+            except Exception as e:
+                last_err = e
                 continue
-        if len(by_date) >= 6:
-            return by_date
-        last_err = RuntimeError("empty a-kline " + ticker)
+            inner = (data.get("data") or {}).get(code) or {}
+            if not inner and data.get("data"):
+                inner = next(iter(data["data"].values()), {}) or {}
+            rows = inner.get("qfqday") or inner.get("day") or []
+            by_date = {}
+            for row in rows:
+                if not row or len(row) < 6:
+                    continue
+                try:
+                    by_date[row[0]] = {
+                        "date": row[0],
+                        "close": float(row[2]),
+                    }
+                except (TypeError, ValueError):
+                    continue
+            if len(by_date) >= 6:
+                return by_date
+            last_err = RuntimeError("empty a-kline " + ticker)
+        time.sleep(0.4 * (attempt + 1))
     raise last_err or RuntimeError("no a-kline " + ticker)
 
 
@@ -167,14 +170,27 @@ def ret_n(closes, n):
 
 
 def quote_as_of(hist, asof):
-    dates = sorted(d for d in hist if d <= asof)
+    all_dates = sorted(hist)
+    dates = [d for d in all_dates if d <= asof]
     if len(dates) < 2:
         return None
     t = dates[-1]
     closes = [hist[d]["close"] for d in dates]
+    after = [d for d in all_dates if d > asof]
+    day_pct = None
+    day_asof = None
+    if after:
+        nxt = after[0]
+        prev = hist[t]["close"]
+        last = hist[nxt]["close"]
+        if prev > 0:
+            day_pct = round((last / prev - 1.0) * 100.0, 2)
+            day_asof = nxt
     return {
         "asOf": t,
         "prevClose": round(hist[t]["close"], 2),
+        "dayPct": day_pct,
+        "dayAsOf": day_asof,
         "d1Pct": ret_n(closes, 1),
         "d5Pct": ret_n(closes, 5),
         "d10Pct": ret_n(closes, 10),
@@ -323,10 +339,30 @@ def public_item(it, extra_tags):
     }
 
 
+def load_existing_payload():
+    if not os.path.isfile(OUT):
+        return None
+    text = open(OUT, "r", encoding="utf-8").read()
+    m = re.search(r"var DATA = (\{.*\});\s*function quote", text, re.S)
+    if not m:
+        return None
+    try:
+        return json.loads(m.group(1))
+    except (ValueError, TypeError):
+        return None
+
+
+def load_existing_news():
+    payload = load_existing_payload()
+    return None if payload is None else payload.get("news")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--start", default="2026-08-17")
     ap.add_argument("--end", default="2026-08-26")
+    ap.add_argument("--quotes-only", action="store_true",
+                    help="只重抓 A 股日K，沿用现有 market-context.js 里的资讯")
     args = ap.parse_args()
 
     sectors, us_map, a_shares = parse_mapping()
@@ -334,6 +370,9 @@ def main():
     days = parse_board()
     if not days:
         raise SystemExit("no board days in sample-board.js")
+
+    existing = load_existing_payload() or {}
+    old_quotes = existing.get("quotes") or {}
 
     print("fetch A-share klines", len(a_shares))
     quotes = {}
@@ -355,57 +394,77 @@ def main():
         except Exception as e:
             miss_a.append(ticker)
             print("MISS", ticker, type(e).__name__, e)
-        time.sleep(0.12)
+        time.sleep(0.2)
 
-    print("fetch news")
-    pool = []
-    pool.extend(fetch_sina_news())
-    print("sina", len(pool))
-    pool.extend(fetch_em_news(350, pages=4))
-    pool.extend(fetch_em_news(395, pages=2))
-    print("news pool", len(pool))
+    kept = 0
+    for ticker, per_day in old_quotes.items():
+        if ticker not in quotes and per_day:
+            quotes[ticker] = per_day
+            kept += 1
+            if ticker in miss_a:
+                miss_a.remove(ticker)
+    if kept:
+        print("kept previous quotes", kept)
 
-    news = {"sector": {}, "us": {}, "a": {}}
-    for day in days:
-        us_date = day["usDate"]
-        day_end = add_days(us_date, 1)
-        week_start = add_days(us_date, -7)
-        for sec in day["sectors"]:
-            info = sector_by_id.get(sec["id"]) or {}
-            leader = sec.get("leader")
-            gainer = sec.get("gainer")
-            leader_name = (us_map.get(leader) or {}).get("name") or ""
-            gainer_name = (us_map.get(gainer) or {}).get("name") or ""
-            kws = news_keys(
-                info.get("nameCn"), info.get("nameEn"),
-                leader, leader_name, gainer, gainer_name,
-                *EXTRA_KW.get(sec["id"], []),
-            )
-            items = match_news(pool, kws, us_date, day_end, 6, True)
-            tagged = []
-            for it in items:
-                extra = []
-                blob = (it["title"] or "").lower()
-                if leader and (leader.lower() in blob or leader_name.lower() in blob):
-                    extra.append("龙头")
-                if gainer and gainer != leader and (gainer.lower() in blob or gainer_name.lower() in blob):
-                    extra.append("涨幅最高")
-                if not extra:
-                    extra.append("板块")
-                tagged.append(public_item(it, extra))
-            news["sector"][us_date + "|" + sec["id"]] = tagged
+    news = None
+    news_pool_n = 0
+    if args.quotes_only:
+        news = load_existing_news()
+        if news is None:
+            raise SystemExit("quotes-only: 读不到现有 market-context.js 的资讯")
+        news_pool_n = sum(len(v) for group in news.values() for v in group.values())
+        print("reuse news", news_pool_n)
+    else:
+        print("fetch news")
+        pool = []
+        pool.extend(fetch_sina_news())
+        print("sina", len(pool))
+        pool.extend(fetch_em_news(350, pages=4))
+        pool.extend(fetch_em_news(395, pages=2))
+        print("news pool", len(pool))
+        news_pool_n = len(pool)
 
-            for tk, role in ((leader, "龙头"), (gainer, "涨幅最高")):
-                if not tk:
-                    continue
-                name = (us_map.get(tk) or {}).get("name") or ""
-                items_u = match_news(pool, news_keys(tk, name), us_date, day_end, 4, True)
-                news["us"][us_date + "|" + tk] = [public_item(x, [role]) for x in items_u]
+        news = {"sector": {}, "us": {}, "a": {}}
+        for day in days:
+            us_date = day["usDate"]
+            day_end = add_days(us_date, 1)
+            week_start = add_days(us_date, -7)
+            for sec in day["sectors"]:
+                info = sector_by_id.get(sec["id"]) or {}
+                leader = sec.get("leader")
+                gainer = sec.get("gainer")
+                leader_name = (us_map.get(leader) or {}).get("name") or ""
+                gainer_name = (us_map.get(gainer) or {}).get("name") or ""
+                kws = news_keys(
+                    info.get("nameCn"), info.get("nameEn"),
+                    leader, leader_name, gainer, gainer_name,
+                    *EXTRA_KW.get(sec["id"], []),
+                )
+                items = match_news(pool, kws, us_date, day_end, 6, True)
+                tagged = []
+                for it in items:
+                    extra = []
+                    blob = (it["title"] or "").lower()
+                    if leader and (leader.lower() in blob or leader_name.lower() in blob):
+                        extra.append("龙头")
+                    if gainer and gainer != leader and (gainer.lower() in blob or gainer_name.lower() in blob):
+                        extra.append("涨幅最高")
+                    if not extra:
+                        extra.append("板块")
+                    tagged.append(public_item(it, extra))
+                news["sector"][us_date + "|" + sec["id"]] = tagged
 
-        for ticker, name in a_shares.items():
-            items_a = match_news(pool, [ticker, name], week_start, day_end, 4, True)
-            if items_a:
-                news["a"][us_date + "|" + ticker] = [public_item(x, ["近一周"]) for x in items_a]
+                for tk, role in ((leader, "龙头"), (gainer, "涨幅最高")):
+                    if not tk:
+                        continue
+                    name = (us_map.get(tk) or {}).get("name") or ""
+                    items_u = match_news(pool, news_keys(tk, name), us_date, day_end, 4, True)
+                    news["us"][us_date + "|" + tk] = [public_item(x, [role]) for x in items_u]
+
+            for ticker, name in a_shares.items():
+                items_a = match_news(pool, [ticker, name], week_start, day_end, 4, True)
+                if items_a:
+                    news["a"][us_date + "|" + ticker] = [public_item(x, ["近一周"]) for x in items_a]
 
     payload = {
         "META": {
@@ -416,7 +475,7 @@ def main():
             "fetchedAt": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
             "aOk": len(quotes),
             "aMiss": ",".join(miss_a),
-            "newsPool": len(pool),
+            "newsPool": news_pool_n,
         },
         "quotes": quotes,
         "news": news,

@@ -65,8 +65,18 @@
     searchOpen: false,
     searchSelected: [],
     notes: [],
-    toastTimer: null
+    toastTimer: null,
+    calDrawerOpen: false,
+    mapSort: { key: "", dir: "desc" }
   };
+
+  var QUOTE_COLS = [
+    { key: "prevClose", label: "前收", kind: "price" },
+    { key: "dayPct", label: "当日涨幅", kind: "pct" },
+    { key: "d1Pct", label: "前日涨幅", kind: "pct" },
+    { key: "d5Pct", label: "5日涨幅", kind: "pct" },
+    { key: "d10Pct", label: "10日涨幅", kind: "pct" }
+  ];
 
   var MAX_SHOT_BYTES = 2 * 1024 * 1024;
 
@@ -130,6 +140,116 @@
     state.toastTimer = setTimeout(function () { el.hidden = true; }, 2200);
   }
 
+  function isNarrow() {
+    return window.matchMedia("(max-width: 980px)").matches;
+  }
+
+  function td(label, inner, extraClass) {
+    return '<td data-label="' + esc(label) + '"' +
+      (extraClass ? ' class="' + extraClass + '"' : "") + ">" + inner + "</td>";
+  }
+
+  function tableWrap(html) {
+    return '<div class="table-wrap">' + html + "</div>";
+  }
+
+  function ensureFold(panel, id) {
+    if (!panel) return;
+    panel.classList.add("foldable");
+    if (!panel.id) panel.id = id;
+    var head = panel.querySelector(".panel-head");
+    if (!head || head.querySelector(".fold-toggle")) return;
+    var wrap = document.createElement("div");
+    wrap.className = "fold-head-text";
+    while (head.firstChild) wrap.appendChild(head.firstChild);
+    head.appendChild(wrap);
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn ghost fold-toggle";
+    btn.setAttribute("data-action", "toggle-fold");
+    btn.setAttribute("data-fold", panel.id);
+    btn.textContent = "展开";
+    head.appendChild(btn);
+  }
+
+  function ensureMobileChrome() {
+    var top = document.querySelector(".topbar");
+    if (top && !$("date-bar")) {
+      var bar = document.createElement("div");
+      bar.id = "date-bar";
+      bar.className = "date-bar";
+      top.parentNode.insertBefore(bar, top.nextSibling);
+    }
+    if (!$("cal-backdrop")) {
+      var bd = document.createElement("div");
+      bd.id = "cal-backdrop";
+      bd.className = "cal-backdrop";
+      bd.setAttribute("data-action", "close-cal");
+      document.body.appendChild(bd);
+    }
+    var side = document.querySelector(".sidebar");
+    if (side && !side.id) side.id = "calendar-drawer";
+    ensureFold(document.querySelector(".search-panel"), "search-panel");
+    ensureFold(document.querySelector(".analysis-panel"), "analysis-panel");
+    var notes = $("day-notes-root");
+    if (notes && notes.closest) {
+      var notesPanel = notes.closest(".panel");
+      if (notesPanel) notesPanel.classList.add("day-notes-panel");
+    }
+  }
+
+  function dateBarMarks(dateStr) {
+    var bits = [];
+    if (SampleBoard.hasBoard(dateStr)) bits.push("日榜");
+    if (briefingReady() && DailyBriefings.hasBriefing(dateStr)) bits.push("简报");
+    if (notesForDate(dateStr).length) bits.push("笔记");
+    return bits.length ? bits.join(" · ") : "无归档数据";
+  }
+
+  function renderDateBar() {
+    var el = $("date-bar");
+    if (!el) return;
+    el.innerHTML =
+      '<div class="date-bar-main">' +
+        "<strong>" + esc(state.selectedDate) + "</strong>" +
+        '<span class="muted">' + esc(dateBarMarks(state.selectedDate)) + "</span>" +
+      "</div>" +
+      '<div class="date-bar-actions">' +
+        '<button type="button" class="btn ghost" data-action="goto-latest">最近</button>' +
+        '<button type="button" class="btn ghost" data-action="toggle-cal">' +
+          (state.calDrawerOpen ? "收起" : "换日期") + "</button>" +
+      "</div>";
+  }
+
+  function syncCalDrawer() {
+    var bar = $("date-bar");
+    if (bar) {
+      document.documentElement.style.setProperty("--date-bar-h", bar.offsetHeight + "px");
+    }
+    var side = document.querySelector(".sidebar");
+    var bd = $("cal-backdrop");
+    var open = !!state.calDrawerOpen && isNarrow();
+    document.documentElement.classList.toggle("cal-open", open);
+    if (side) side.classList.toggle("is-open", open);
+    if (bd) {
+      bd.classList.toggle("is-open", open);
+      bd.hidden = !open;
+    }
+  }
+
+  function scrollToResults() {
+    var target = $("drilldown-root");
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function openAnalysisPanel() {
+    var panel = $("analysis-panel") || document.querySelector(".analysis-panel");
+    if (!panel || !isNarrow()) return;
+    panel.classList.add("is-open");
+    var btn = panel.querySelector(".fold-toggle");
+    if (btn) btn.textContent = "收起";
+  }
+
   function renderCalendar() {
     var y = state.viewYear;
     var m = state.viewMonth;
@@ -181,18 +301,56 @@
       rows + "</tbody></table>";
   }
 
-  function fmtQuote(q) {
-    if (!q) return '<span class="muted">暂无A股行情</span>';
-    function p(v) {
-      if (v == null || isNaN(v)) return "—";
-      return fmtPct(v);
+  function numVal(v) {
+    return v == null || v === "" || (typeof v === "number" && isNaN(v));
+  }
+
+  function sortMapped(list, getVal) {
+    var key = state.mapSort && state.mapSort.key;
+    if (!key) return list;
+    var dir = state.mapSort.dir === "asc" ? 1 : -1;
+    return list.slice().sort(function (a, b) {
+      var va = getVal(a, key);
+      var vb = getVal(b, key);
+      var na = numVal(va);
+      var nb = numVal(vb);
+      if (na && nb) return 0;
+      if (na) return 1;
+      if (nb) return -1;
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
+  }
+
+  function sortTh(col) {
+    var active = state.mapSort.key === col.key;
+    var arrow = active ? (state.mapSort.dir === "desc" ? " ↓" : " ↑") : "";
+    return '<th class="sortable col-num' + (active ? " is-sorted" : "") + '">' +
+      '<button type="button" data-action="sort-quote" data-key="' + esc(col.key) + '">' +
+      esc(col.label) + arrow + "</button></th>";
+  }
+
+  function quoteHead() {
+    return QUOTE_COLS.map(sortTh).join("");
+  }
+
+  function fmtQuoteCell(q, col) {
+    var v = q ? q[col.key] : null;
+    if (numVal(v)) return '<span class="muted">—</span>';
+    if (col.kind === "pct") {
+      return '<span class="' + pctClass(v) + '">' + fmtPct(v) + "</span>";
     }
-    return '<span class="quote-pills">' +
-      '<span class="quote-pill"><span class="k">前收</span><span class="v">' + q.prevClose + '</span><span class="asof">' + esc(q.asOf) + "</span></span>" +
-      '<span class="quote-pill"><span class="k">前日涨幅</span><span class="v ' + pctClass(q.d1Pct) + '">' + p(q.d1Pct) + "</span></span>" +
-      '<span class="quote-pill"><span class="k">5日</span><span class="v ' + pctClass(q.d5Pct) + '">' + p(q.d5Pct) + "</span></span>" +
-      '<span class="quote-pill"><span class="k">10日</span><span class="v ' + pctClass(q.d10Pct) + '">' + p(q.d10Pct) + "</span></span>" +
-      "</span>";
+    var extra = (col.key === "prevClose" && q.asOf)
+      ? '<span class="asof">' + esc(q.asOf) + "</span>"
+      : "";
+    return '<span class="mono">' + v + "</span>" + extra;
+  }
+
+  function quoteTds(q) {
+    return QUOTE_COLS.map(function (col) {
+      return td(col.label, fmtQuoteCell(q, col), "col-num");
+    }).join("");
   }
 
   function renderNewsList(items, emptyText) {
@@ -218,6 +376,33 @@
 
   function ctxReady() {
     return typeof MarketContext !== "undefined";
+  }
+
+  function quoteOf(ticker, usDate) {
+    if (!ctxReady()) return null;
+    var q = MarketContext.quote(ticker, usDate);
+    if (!q) return null;
+    if (q.dayPct != null) return q;
+    var dates = SampleBoard.listDates().slice().sort();
+    var i = dates.indexOf(usDate);
+    var filled = null;
+    if (i >= 0) {
+      for (var j = i + 1; j < dates.length; j++) {
+        var nq = MarketContext.quote(ticker, dates[j]);
+        if (nq && nq.asOf && q.asOf && nq.asOf > q.asOf && nq.d1Pct != null) {
+          filled = { dayPct: nq.d1Pct, dayAsOf: nq.asOf };
+          break;
+        }
+      }
+    }
+    if (!filled) return q;
+    var out = {};
+    for (var k in q) {
+      if (Object.prototype.hasOwnProperty.call(q, k)) out[k] = q[k];
+    }
+    out.dayPct = filled.dayPct;
+    out.dayAsOf = filled.dayAsOf;
+    return out;
   }
 
   function stockBlock(kind, stock, role) {
@@ -433,23 +618,30 @@
         '<p class="empty">该板块/个股暂无写入简报的映射 A 股。</p>';
       return;
     }
-    var body = rows.map(function (r) {
+    var body = sortMapped(rows, function (r, key) {
+      if (key === "dUsPct") return r.dUsPct;
+      if (key === "dReactPct") return r.dReactPct;
+      return null;
+    }).map(function (r) {
       var a = parseAFromBrief(r.a);
       return "<tr>" +
-        '<td><button type="button" class="stock-link" data-action="analyze" data-ticker="' + a.ticker + '">' +
-        esc(a.ticker) + "</button></td>" +
-        "<td>" + esc(a.name) + "</td>" +
-        '<td><span class="rel">' + esc(r.relation) + "</span></td>" +
-        '<td class="' + pctClass(r.dUsPct) + '">' + fmtPct(r.dUsPct) + "</td>" +
-        '<td class="' + pctClass(r.dReactPct) + '">' + fmtPct(r.dReactPct) + "</td>" +
-        "<td>" + esc(r.us) + " · " + esc(r.role) + "</td>" +
-        '<td><button type="button" class="btn ghost" data-action="analyze" data-ticker="' + a.ticker + '">分析此股</button></td>' +
+        td("代码", '<button type="button" class="stock-link" data-action="analyze" data-ticker="' + a.ticker + '">' +
+          esc(a.ticker) + "</button>") +
+        td("名称", esc(a.name)) +
+        td("关系", '<span class="rel">' + esc(r.relation) + "</span>") +
+        td("A 美股日", '<span class="' + pctClass(r.dUsPct) + '">' + fmtPct(r.dUsPct) + "</span>", "col-num") +
+        td("A 反应日", '<span class="' + pctClass(r.dReactPct) + '">' + fmtPct(r.dReactPct) + "</span>", "col-num") +
+        td("对应美股", esc(r.us) + " · " + esc(r.role)) +
+        td("", '<button type="button" class="btn ghost" data-action="analyze" data-ticker="' + a.ticker + '">分析此股</button>') +
         "</tr>";
     }).join("");
     root.innerHTML = '<div class="panel-head"><h2>' + esc(title) + "</h2>" +
       '<p class="muted">' + esc(hint) + "</p></div>" +
-      '<table class="table"><thead><tr><th>代码</th><th>名称</th><th>关系</th><th>A 美股日</th><th>A 反应日</th><th>对应美股</th><th></th></tr></thead><tbody>' +
-      body + "</tbody></table>";
+      tableWrap('<table class="table quote-table"><thead><tr><th>代码</th><th>名称</th><th>关系</th>' +
+      sortTh({ key: "dUsPct", label: "A 美股日" }) +
+      sortTh({ key: "dReactPct", label: "A 反应日" }) +
+      '<th>对应美股</th><th></th></tr></thead><tbody>' +
+      body + "</tbody></table>");
   }
 
   function renderDrilldown() {
@@ -484,15 +676,19 @@
         root.innerHTML = '<p class="empty">未找到该板块映射。</p>';
         return;
       }
-      var rows = sec.aShares.map(function (a) {
-        var q = ctxReady() ? MarketContext.quote(a.ticker, state.selectedDate) : null;
+      var rows = sortMapped(sec.aShares.map(function (a) {
+        return { a: a, q: quoteOf(a.ticker, state.selectedDate) };
+      }), function (row, key) {
+        return row.q ? row.q[key] : null;
+      }).map(function (row) {
+        var a = row.a;
         return "<tr>" +
-          '<td><button type="button" class="stock-link" data-action="analyze" data-ticker="' + a.ticker + '">' + a.ticker + "</button></td>" +
-          "<td>" + esc(a.name) + "</td>" +
-          "<td>板块映射</td>" +
-          "<td class=\"col-quote\">" + fmtQuote(q) + "</td>" +
-          "<td class=\"col-note\">" + esc(a.note) + "</td>" +
-          '<td><button type="button" class="btn ghost" data-action="analyze" data-ticker="' + a.ticker + '">分析此股</button></td>' +
+          td("代码", '<button type="button" class="stock-link" data-action="analyze" data-ticker="' + a.ticker + '">' + a.ticker + "</button>") +
+          td("名称", esc(a.name)) +
+          td("关系", "板块映射") +
+          quoteTds(row.q) +
+          td("说明", esc(a.note), "col-note") +
+          td("", '<button type="button" class="btn ghost" data-action="analyze" data-ticker="' + a.ticker + '">分析此股</button>') +
         "</tr>";
       }).join("");
       var weekNews = "";
@@ -515,8 +711,8 @@
         weekNews = '<div class="mapped-news"><div class="mapped-news-title">关联 A 股 · 近一周资讯</div>' + weekNews + "</div>";
       }
       root.innerHTML = '<div class="panel-head"><h2>板块映射 A 股 · ' + esc(sec.nameCn) + "</h2>" +
-        '<p class="muted">行业/概念级候选。行情为该美股交易日对应的最近 A 股收盘：前收、前日涨幅、5 日与 10 日涨幅。</p></div>' +
-        '<table class="table"><thead><tr><th>代码</th><th>名称</th><th>关系</th><th>行情</th><th>说明</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>" +
+        '<p class="muted">行业/概念级候选。前收为该美股日对应的最近 A 股收盘；当日涨幅为下一 A 股交易日；前日/5日/10日为相对前收的涨跌。点击行情字段名排序。</p></div>' +
+        tableWrap('<table class="table quote-table"><thead><tr><th>代码</th><th>名称</th><th>关系</th>' + quoteHead() + '<th>说明</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>") +
         (weekNews || '<p class="empty">近一周暂无匹配资讯。</p>');
       return;
     }
@@ -529,15 +725,19 @@
           '<p class="empty">种子映射中暂无对应 A 股。可在个股分析中手动记录，或后续补充 mapping.js。</p>';
         return;
       }
-      var body = mapped.map(function (a) {
-        var q = ctxReady() ? MarketContext.quote(a.ticker, state.selectedDate) : null;
+      var body = sortMapped(mapped.map(function (a) {
+        return { a: a, q: quoteOf(a.ticker, state.selectedDate) };
+      }), function (row, key) {
+        return row.q ? row.q[key] : null;
+      }).map(function (row) {
+        var a = row.a;
         return "<tr>" +
-          '<td><button type="button" class="stock-link" data-action="analyze" data-ticker="' + a.ticker + '">' + a.ticker + "</button></td>" +
-          "<td>" + esc(a.name) + "</td>" +
-          '<td><span class="rel">' + esc(a.relation) + "</span></td>" +
-          "<td class=\"col-quote\">" + fmtQuote(q) + "</td>" +
-          "<td class=\"col-note\">" + esc(a.note) + "</td>" +
-          '<td><button type="button" class="btn ghost" data-action="analyze" data-ticker="' + a.ticker + '">分析此股</button></td>' +
+          td("代码", '<button type="button" class="stock-link" data-action="analyze" data-ticker="' + a.ticker + '">' + a.ticker + "</button>") +
+          td("名称", esc(a.name)) +
+          td("关系", '<span class="rel">' + esc(a.relation) + "</span>") +
+          quoteTds(row.q) +
+          td("说明", esc(a.note), "col-note") +
+          td("", '<button type="button" class="btn ghost" data-action="analyze" data-ticker="' + a.ticker + '">分析此股</button>') +
         "</tr>";
       }).join("");
       var weekNews = "";
@@ -557,8 +757,8 @@
         weekNews = '<div class="mapped-news"><div class="mapped-news-title">对应股票资讯</div>' + weekNews + "</div>";
       }
       root.innerHTML = '<div class="panel-head"><h2>个股映射 A 股 · ' + esc(state.selectedUsTicker) + " " + esc(name) + "</h2>" +
-        '<p class="muted">按业务关系列出。行情为对应最近 A 股收盘价、前日涨幅、5 日与 10 日涨幅。</p></div>' +
-        '<table class="table"><thead><tr><th>代码</th><th>名称</th><th>关系</th><th>行情</th><th>说明</th><th></th></tr></thead><tbody>' + body + "</tbody></table>" +
+        '<p class="muted">按业务关系列出。前收为对应最近 A 股收盘；当日涨幅为下一 A 股交易日。点击行情字段名排序。</p></div>' +
+        tableWrap('<table class="table quote-table"><thead><tr><th>代码</th><th>名称</th><th>关系</th>' + quoteHead() + '<th>说明</th><th></th></tr></thead><tbody>' + body + "</tbody></table>") +
         (weekNews || '<p class="empty">近一周暂无匹配资讯。</p>');
       return;
     }
@@ -760,6 +960,7 @@
 
   function render() {
     renderTopbar();
+    renderDateBar();
     renderCalendar();
     renderBriefing();
     renderBoard();
@@ -770,6 +971,7 @@
     renderSearchChips();
     renderSearchDropdown();
     renderSearchResults();
+    syncCalDrawer();
   }
 
   function pickDate(dateStr) {
@@ -781,7 +983,14 @@
     state.selectedUsTicker = null;
     state.selectedBriefSector = null;
     state.drillMode = null;
+    state.calDrawerOpen = false;
     render();
+    if (isNarrow()) {
+      var lead = $("briefing-root");
+      var board = $("board-root");
+      var el = lead && !lead.hidden ? lead : board;
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }
 
   function loadNotes() {
@@ -876,6 +1085,27 @@
         e.stopPropagation();
         return;
       }
+      if (action === "toggle-cal") {
+        state.calDrawerOpen = !state.calDrawerOpen;
+        renderDateBar();
+        syncCalDrawer();
+        return;
+      }
+      if (action === "close-cal") {
+        state.calDrawerOpen = false;
+        renderDateBar();
+        syncCalDrawer();
+        return;
+      }
+      if (action === "toggle-fold") {
+        var foldId = t.getAttribute("data-fold");
+        var panel = $(foldId);
+        if (!panel) return;
+        panel.classList.toggle("is-open");
+        var foldBtn = panel.querySelector(".fold-toggle");
+        if (foldBtn) foldBtn.textContent = panel.classList.contains("is-open") ? "收起" : "展开";
+        return;
+      }
       if (action === "prev-month") {
         if (state.viewMonth === 0) { state.viewYear -= 1; state.viewMonth = 11; }
         else state.viewMonth -= 1;
@@ -907,12 +1137,24 @@
         if (dest) window.location.assign(dest);
         return;
       }
+      if (action === "sort-quote") {
+        var sortKey = t.getAttribute("data-key");
+        if (state.mapSort.key === sortKey) {
+          state.mapSort.dir = state.mapSort.dir === "desc" ? "asc" : "desc";
+        } else {
+          state.mapSort.key = sortKey;
+          state.mapSort.dir = "desc";
+        }
+        renderDrilldown();
+        return;
+      }
       if (action === "pick-sector") {
         state.selectedSectorId = t.getAttribute("data-id");
         state.selectedUsTicker = null;
         state.selectedBriefSector = null;
         state.drillMode = "sector";
         render();
+        if (isNarrow()) scrollToResults();
         return;
       }
       if (action === "pick-brief-sector") {
@@ -942,11 +1184,13 @@
         var us = MappingData.usByTicker(state.selectedUsTicker);
         if (us) state.selectedSectorId = us.sectorId;
         render();
+        if (isNarrow()) scrollToResults();
         return;
       }
       if (action === "analyze") {
         e.stopPropagation();
         fillAnalysisForm(t.getAttribute("data-ticker"));
+        openAnalysisPanel();
         $("ticker-input").scrollIntoView({ behavior: "smooth", block: "center" });
         return;
       }
@@ -998,6 +1242,7 @@
         return;
       }
       fillAnalysisForm(t);
+      openAnalysisPanel();
       if (!MappingData.isKnown(t) && !SampleAnalysis[t]) {
         $("no-data-hint").hidden = false;
       }
@@ -1034,9 +1279,21 @@
     $("btn-mapping-help").addEventListener("click", function () {
       renderModal(true);
     });
+
+    window.addEventListener("resize", function () {
+      if (!isNarrow() && state.calDrawerOpen) state.calDrawerOpen = false;
+      renderDateBar();
+      syncCalDrawer();
+    });
   }
 
+  ensureMobileChrome();
   bind();
   $("save-hint").textContent = "将保存到 " + state.selectedDate;
+  renderDateBar();
   loadNotes().then(render);
+
+  if ((location.protocol === "http:" || location.protocol === "https:") && "serviceWorker" in navigator) {
+    navigator.serviceWorker.register(new URL("sw.js", document.baseURI)).catch(function () {});
+  }
 })();

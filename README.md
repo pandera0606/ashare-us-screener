@@ -2,7 +2,7 @@
 
 给后续 Agent 与维护者用的项目说明。改功能时必须同步更新本文档，并在文末「版本记录」追加条目。更短的协作约定见 [AGENTS.md](AGENTS.md)。
 
-当前版本：**v0.1.8**（2026-08-27）
+当前版本：**v0.1.10**（2026-08-27）
 
 ## 1. 项目目标
 
@@ -36,6 +36,12 @@ js/app.js                  日历、简报、日榜、映射下钻、分析、�
 tools/fetch_board.py       离线抓取美股日K并重写 sample-board.js
 tools/fetch_context.py     离线抓取 A 股日K与资讯，重写 market-context.js
 tools/archive_index.py     把当前 index.html 拷到 archive/ 并写时间戳
+tools/serve.py             局域网静态服务（电脑开着时手机也可打开）
+tools/make_icons.py        生成主屏幕图标 PNG
+manifest.json              网页应用清单（添加到主屏幕）
+sw.js                      Service Worker（仅 http/https，file:// 不注册）
+icons/                     主屏幕 / Apple Touch 图标
+.github/workflows/pages.yml  推送到 main 后发布 GitHub Pages
 README.md                  本文件
 AGENTS.md                  Agent 协作约定
 ```
@@ -64,7 +70,35 @@ AGENTS.md                  Agent 协作约定
 5. **个股分析**  
    输入 A 股 6 位代码或美股 ticker（大小写不敏感，可带 `.SZ` / `SH` 前缀）。展示该股 + 双向映射，可切换 chip。有种子文案则预填基本面/技术面；否则提示上传走势截图。点「保存到日历」写入**当前选中交易日**。当日已存分析会列出映射股的**代码 + 名称**（及关系类型），并展示上传的走势截图（可点击放大）。
 6. **多选检索**  
-   主栏最上方「多选检索」面板：搜索框、已选标签与检索结果在同一块区域内相邻展示。可同时多选，列出这些股票的全部历史分析，可「查看当日」跳转日历。
+   主栏最上方「多选检索」面板：搜索框、已选标签与检索结果在同一块区域内相邻展示。可同时多选，列出这些股票的全部历史分析，可「查看当日」跳转日历。手机上该面板默认收起，点「展开」再用。
+
+### 3.1 手机 / 平板打开
+
+iPhone / iPad **不能**把 iCloud 里的 `index.html` 当成 App：系统预览加载不了旁边的 `css/`、`js/`。电脑上继续双击即可。
+
+要在手机上像 App 一样从主屏幕打开、又**不用电脑起服务**，需要一个 https 地址，然后「添加到主屏幕」。本仓库已带 `manifest.json` 与 `sw.js`（只在 http/https 注册，不影响 `file://`）。
+
+**推荐：GitHub Pages + 添加到主屏幕**
+
+1. 把改动推到 `main`。首次还要在仓库 **Settings → Pages → Source** 选 **GitHub Actions**。
+2. 发布后地址一般是：`https://pandera0606.github.io/ashare-us-screener/`
+3. 用 **Safari**（iPhone）或 **Chrome**（Android）打开该地址，不要用微信内置浏览器。
+4. iPhone：分享 → **添加到主屏幕**。Android：菜单 → **添加到主屏幕** / **安装应用**。
+5. 之后从主屏幕图标打开，全屏、无浏览器地址栏。
+
+注意：GitHub Pages 会把当前站点内容放到网上。仓库若是公开的，简报和映射别人也能打开。私有仓库的 Pages 通常需要付费方案。笔记仍在**这部手机这只浏览器**的 IndexedDB 里，和电脑、和其他设备不互通。更新日榜/简报后要再 push，主屏幕应用才会拿到新数据（Service Worker 缓存名随版本号，见 `sw.js`）。
+
+**备用：电脑局域网服务**（电脑开着、同一 Wi-Fi 时）
+
+```
+python tools/serve.py
+```
+
+终端打印的 `http://192.168.x.x:8765/` 用手机浏览器打开。Windows 若打不开，防火墙放行该端口。这个地址也可以「添加到主屏幕」，但电脑关机或换网络后图标会失效，所以日常看盘更适合 Pages。
+
+窄屏默认先看结果：顶上日期条 → 隔夜简报 → 日榜 → 映射 → 当日笔记。点「换日期」才弹出日历；「多选检索」和「个股分析」默认收起。平板竖屏同手机；约 721px 以上日榜卡片两列。
+
+本版不做封装进 App Store 的原生壳（Capacitor / Xcode）。那是另一条线，需要开发者账号。
 
 ## 4. 数据 schema
 
@@ -256,8 +290,9 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 
 ## 7. UI 与实现要点
 
-- 单页结构：顶栏 → 多选检索 → 隔夜简报（结论 + 前三卡片）→ 日榜 → 映射明细（点选后才出现）→ 个股分析 → 当日已存分析。
+- 单页结构：顶栏 → 多选检索 → 隔夜简报（结论 + 前三卡片）→ 日榜 → 映射明细（点选后才出现）→ 个股分析 → 当日已存分析。窄屏把简报/日榜提前，检索与分析默认折叠。
 - 日历绿色点 = 有隔夜简报；工作副本是根目录 `index.html`，按日快照是 `archive/YYYY-MM-DD_HHMM.html`。
+- 手机/平板：要像 App 一样从主屏幕打开，用 GitHub Pages 的 https 地址「添加到主屏幕」；电脑在线时也可用 `python tools/serve.py`。不要依赖 iCloud 里直接点 HTML。
 - 当日笔记展示映射股代码与名称；截图以较大预览呈现，点击可放大。
 - 事件委托：`document` 监听 `[data-action]`。板块卡片必须是 `div` 而不是 `button`，以免嵌套按钮被浏览器拆开。
 - 分析表单（textarea、文件选择）不在每次 `render()` 时重建，避免光标丢失。
@@ -270,10 +305,23 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 - 映射表可视化编辑器、导出/导入 JSON
 - 分析笔记导出 Markdown
 - 云同步
+- 封装成 App Store / 应用商店原生壳（Capacitor 等）
 
 做上述任何一项，都要改 README 版本记录，并核对 schema 是否向后兼容。IndexedDB 升版本时在 `store.js` 的 `onupgradeneeded` 写迁移，不要直接改 keyPath 导致旧笔记丢失。
 
 ## 9. 版本记录
+
+### v0.1.10 — 2026-08-27
+
+- 支持像 App 一样从手机主屏幕打开：`manifest.json`、主屏幕图标、`sw.js`（仅 http/https 注册，`file://` 双击不受影响）。
+- 增加 GitHub Pages 工作流。推到 `main` 并在仓库 Settings 启用 Pages 后，用 Safari/Chrome 打开站点再「添加到主屏幕」，无需电脑起 `serve.py`。
+- 兼容性：IndexedDB 与数据文件未改。Pages 会公开当前站点内容；笔记仍只存在打开它的那只浏览器里。
+
+### v0.1.9 — 2026-08-27
+
+- 手机/平板可看结果：窄屏用顶部日期条换日期，日历改为抽屉；简报与日榜提前，检索/分析默认收起；映射表改为卡片。
+- 新增 `tools/serve.py`，同一 Wi-Fi 用手机浏览器打开。不要在 iCloud「文件」里直接点 `index.html`。
+- 兼容性：IndexedDB 与数据文件未改；电脑宽屏布局不变。旧 `archive/` 快照共用根目录 css/js，也会带上窄屏样式。
 
 ### v0.1.8 — 2026-08-27
 
