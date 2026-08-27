@@ -1,0 +1,1042 @@
+(function () {
+  if (typeof window.MappingData === "undefined") {
+    window.MappingData = {
+      normalize: function (raw) {
+        var t = String(raw || "").trim().toUpperCase();
+        t = t.replace(/^(SH|SZ|SS)\.?/, "");
+        if (/^\d+$/.test(t) && t.length < 6) {
+          while (t.length < 6) t = "0" + t;
+        }
+        return t;
+      },
+      getRelated: function (t) {
+        t = this.normalize(t);
+        return { primary: { ticker: t, name: t }, mapped: [] };
+      },
+      getMappedFromUs: function () { return []; },
+      getStockName: function (t) { return this.normalize(t); },
+      searchStocks: function () { return []; },
+      isKnown: function () { return false; },
+      sectorById: function () { return null; },
+      usByTicker: function () { return null; }
+    };
+  }
+  if (typeof window.SampleBoard === "undefined") {
+    window.SampleBoard = {
+      DAYS: [],
+      META: null,
+      listDates: function () { return []; },
+      getDay: function () { return null; },
+      latestDate: function () { return null; },
+      hasBoard: function () { return false; }
+    };
+  }
+  if (typeof window.SampleAnalysis === "undefined") {
+    window.SampleAnalysis = {};
+  }
+
+  function briefingReady() {
+    return typeof DailyBriefings !== "undefined" && DailyBriefings;
+  }
+
+  function latestDataDate() {
+    var dates = [];
+    var d = SampleBoard.latestDate();
+    if (d) dates.push(d);
+    if (briefingReady()) {
+      var b = DailyBriefings.latestDate();
+      if (b) dates.push(b);
+    }
+    dates.sort();
+    return dates.length ? dates[dates.length - 1] : null;
+  }
+
+  var state = {
+    viewYear: 2026,
+    viewMonth: 7,
+    selectedDate: latestDataDate() || "2026-08-26",
+    selectedSectorId: null,
+    selectedUsTicker: null,
+    selectedBriefSector: null,
+    drillMode: null,
+    focusTicker: null,
+    draftShots: [],
+    searchQuery: "",
+    searchOpen: false,
+    searchSelected: [],
+    notes: [],
+    toastTimer: null
+  };
+
+  var MAX_SHOT_BYTES = 2 * 1024 * 1024;
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function pctClass(n) {
+    if (n > 0) return "up";
+    if (n < 0) return "down";
+    return "";
+  }
+
+  function fmtPct(n) {
+    var sign = n > 0 ? "+" : "";
+    return sign + Number(n).toFixed(2) + "%";
+  }
+
+  function pad(n) {
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  function ymd(y, m, d) {
+    return y + "-" + pad(m + 1) + "-" + pad(d);
+  }
+
+  function beijingHint(usDate) {
+    var p = usDate.split("-");
+    var dt = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]) + 1, 4, 0, 0));
+    return "北京时间 " + dt.getUTCFullYear() + "-" + pad(dt.getUTCMonth() + 1) + "-" + pad(dt.getUTCDate()) + " 04:00 后（夏令时收盘）";
+  }
+
+  function weekday(usDate) {
+    var p = usDate.split("-");
+    return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).getDay();
+  }
+
+  function notesForDate(usDate) {
+    return state.notes.filter(function (n) { return n.usDate === usDate; });
+  }
+
+  function datesWithNotes() {
+    var map = {};
+    state.notes.forEach(function (n) { map[n.usDate] = true; });
+    return map;
+  }
+
+  function showToast(msg) {
+    var el = $("toast-root");
+    el.textContent = msg;
+    el.hidden = false;
+    clearTimeout(state.toastTimer);
+    state.toastTimer = setTimeout(function () { el.hidden = true; }, 2200);
+  }
+
+  function renderCalendar() {
+    var y = state.viewYear;
+    var m = state.viewMonth;
+    var first = new Date(y, m, 1);
+    var startWeekday = (first.getDay() + 6) % 7;
+    var daysInMonth = new Date(y, m + 1, 0).getDate();
+    var noteMap = datesWithNotes();
+    var cells = [];
+    var i;
+    for (i = 0; i < startWeekday; i++) cells.push(null);
+    for (i = 1; i <= daysInMonth; i++) cells.push(i);
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    var rows = "";
+    for (i = 0; i < cells.length; i += 7) {
+      rows += "<tr>";
+      for (var j = 0; j < 7; j++) {
+        var day = cells[i + j];
+        if (day == null) {
+          rows += "<td></td>";
+          continue;
+        }
+        var dateStr = ymd(y, m, day);
+        var wd = weekday(dateStr);
+        var cls = [];
+        if (dateStr === state.selectedDate) cls.push("selected");
+        if (wd === 0 || wd === 6) cls.push("weekend");
+        var marks = "";
+        if (SampleBoard.hasBoard(dateStr)) marks += '<i class="dot gold"></i>';
+        if (briefingReady() && DailyBriefings.hasBriefing(dateStr)) marks += '<i class="dot brief"></i>';
+        if (noteMap[dateStr]) marks += '<i class="dot blue"></i>';
+        rows += '<td><button type="button" data-action="pick-date" data-date="' + dateStr + '" class="' + cls.join(" ") + '">' +
+          day + '<div class="marks">' + marks + "</div></button></td>";
+      }
+      rows += "</tr>";
+    }
+
+    $("calendar-root").innerHTML =
+      '<div class="cal-nav">' +
+        '<button type="button" class="btn ghost" data-action="prev-month">上月</button>' +
+        "<h2>" + y + "年" + (m + 1) + "月</h2>" +
+        '<button type="button" class="btn ghost" data-action="next-month">下月</button>' +
+      "</div>" +
+      '<div class="cal-quick">' +
+        '<button type="button" class="btn ghost" data-action="goto-latest">最近有数据日</button>' +
+        '<button type="button" class="btn ghost" data-action="goto-today">今日</button>' +
+      "</div>" +
+      '<table class="cal-grid"><thead><tr><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr></thead><tbody>' +
+      rows + "</tbody></table>";
+  }
+
+  function fmtQuote(q) {
+    if (!q) return '<span class="muted">暂无A股行情</span>';
+    function p(v) {
+      if (v == null || isNaN(v)) return "—";
+      return fmtPct(v);
+    }
+    return '<span class="quote-pills">' +
+      '<span class="quote-pill"><span class="k">前收</span><span class="v">' + q.prevClose + '</span><span class="asof">' + esc(q.asOf) + "</span></span>" +
+      '<span class="quote-pill"><span class="k">前日涨幅</span><span class="v ' + pctClass(q.d1Pct) + '">' + p(q.d1Pct) + "</span></span>" +
+      '<span class="quote-pill"><span class="k">5日</span><span class="v ' + pctClass(q.d5Pct) + '">' + p(q.d5Pct) + "</span></span>" +
+      '<span class="quote-pill"><span class="k">10日</span><span class="v ' + pctClass(q.d10Pct) + '">' + p(q.d10Pct) + "</span></span>" +
+      "</span>";
+  }
+
+  function renderNewsList(items, emptyText) {
+    if (!items || !items.length) {
+      return '<p class="empty news-empty">' + esc(emptyText || "暂无匹配资讯") + "</p>";
+    }
+    return '<ul class="news-list">' + items.map(function (n) {
+      var tags = (n.tags || []).map(function (t) {
+        var cls = "tag";
+        if (t === "龙头") cls += " tag-leader";
+        else if (t === "涨幅最高") cls += " tag-gainer";
+        else if (t === "板块") cls += " tag-sector";
+        else if (t === "近一周") cls += " tag-week";
+        return '<span class="' + cls + '">' + esc(t) + "</span>";
+      }).join("");
+      return "<li>" +
+        '<a href="' + esc(n.url) + '" target="_blank" rel="noopener noreferrer" data-action="noop">' +
+        esc(n.title) + "</a>" +
+        '<div class="news-meta">' + esc(n.date || "") + " · " + esc(n.source || "") + tags + "</div>" +
+        "</li>";
+    }).join("") + "</ul>";
+  }
+
+  function ctxReady() {
+    return typeof MarketContext !== "undefined";
+  }
+
+  function stockBlock(kind, stock, role) {
+    return '<div class="stock-row role-' + esc(role || "leader") + '">' +
+      '<div class="label">' + esc(kind) + "</div>" +
+      '<div class="line1">' +
+        '<button type="button" class="stock-link" data-action="pick-us" data-ticker="' + esc(stock.ticker) + '">' +
+          esc(stock.ticker) + " " + esc(stock.name) + "</button>" +
+        '<span class="pct ' + pctClass(stock.changePct) + '">' + fmtPct(stock.changePct) + "</span>" +
+      "</div>" +
+      '<div class="tech-meta">量能 ' + Number(stock.volumeVsAvg).toFixed(2) + "x · " + esc(stock.maBias) + " · 趋势 " + esc(stock.trend) + "</div>" +
+      '<div class="tech-meta">' + esc(stock.techNote) + "</div>" +
+    "</div>";
+  }
+
+  function parseUsFromBrief(us) {
+    return String(us || "").replace(/[+\-−].*$/, "").trim().split(/\s+/)[0];
+  }
+
+  function parseAFromBrief(a) {
+    var s = String(a || "");
+    var m = s.match(/(\d{6})/);
+    var ticker = m ? m[1] : MappingData.normalize(s);
+    var name = s.replace(ticker, "").replace(/\s+/g, " ").trim() || ticker;
+    return { ticker: ticker, name: name };
+  }
+
+  function briefingDay() {
+    return briefingReady() ? DailyBriefings.getDay(state.selectedDate) : null;
+  }
+
+  function boardDay() {
+    return SampleBoard.getDay(state.selectedDate);
+  }
+
+  function renderTopbar() {
+    var el = $("page-stamp");
+    if (!el) return;
+    var bits = ["日历按美股交易日归档"];
+    if (briefingReady() && DailyBriefings.META) {
+      bits.push("简报保存 " + DailyBriefings.META.savedAt);
+      bits.push("美股日 " + DailyBriefings.META.latestUsDate);
+    } else if (SampleBoard.META) {
+      bits.push("日榜 " + SampleBoard.META.start + " 至 " + SampleBoard.META.end);
+    }
+    el.textContent = bits.join(" · ");
+  }
+
+  function renderBriefing() {
+    var root = $("briefing-root");
+    if (!root) return;
+    var day = briefingDay();
+    if (!day) {
+      if (!briefingReady() || boardDay()) {
+        root.innerHTML = "";
+        root.hidden = true;
+        return;
+      }
+      root.hidden = false;
+      root.innerHTML = '<div class="panel-head"><h2>' + esc(state.selectedDate) + " 隔夜简报</h2>" +
+        '<p class="muted">日历已切到这一天。有简报的日期在日历上有绿色点。</p></div>' +
+        '<p class="empty">这一天还没有隔夜简报。</p>';
+      return;
+    }
+    root.hidden = false;
+    var html = '<div class="date-head"><div><h2>' + esc(day.usDate) + " 隔夜简报</h2>" +
+      '<p class="muted">生成 ' + esc(day.generatedAt) + " · 保存 " + esc(day.savedAt) +
+      " · 点击板块看映射 A 股，点美股代码看该股对应 A 股</p></div></div>";
+    html += '<div class="brief-lead"><strong>' + esc(day.headline) + "</strong></div>";
+    if (boardDay()) {
+      html += '<p class="muted">下方日榜卡片与原来一样：点板块或代码查看映射。详细推理见 Markdown。</p>';
+    } else {
+      html += '<div class="sector-grid">';
+      (day.top3 || []).forEach(function (sec) {
+        var row = null;
+        (day.sectors || []).forEach(function (s) {
+          if (s.nameCn === sec.nameCn) row = s;
+        });
+        var leader = row ? parseUsFromBrief(row.leader) : "";
+        var gainer = row ? parseUsFromBrief(row.topGainer) : "";
+        var leaderPct = row ? row.leader.replace(leader, "").trim() : "";
+        var gainerPct = row ? row.topGainer.replace(gainer, "").trim() : "";
+        var same = leader && leader === gainer;
+        var active = state.drillMode === "brief-sector" && state.selectedBriefSector === sec.nameCn
+          ? " active"
+          : "";
+        html += '<div class="sector-card' + active + '" data-action="pick-brief-sector" data-name="' +
+          esc(sec.nameCn) + '" role="button" tabindex="0">' +
+          '<div class="name"><strong>' + esc(sec.nameCn) + '</strong><span class="pct ' +
+          pctClass(sec.changePct) + '">' + fmtPct(sec.changePct) + "</span></div>" +
+          '<div class="en">' + esc(sec.take || "") + "</div>";
+        if (leader) {
+          html += '<div class="stock-row role-leader">' +
+            '<div class="label">龙头</div>' +
+            '<div class="line1">' +
+              '<button type="button" class="stock-link" data-action="pick-brief-us" data-ticker="' +
+              esc(leader) + '" data-name="' + esc(sec.nameCn) + '">' + esc(leader) + "</button>" +
+              '<span class="pct">' + esc(leaderPct) + "</span>" +
+            "</div></div>";
+        }
+        if (gainer) {
+          html += '<div class="stock-row role-gainer">' +
+            '<div class="label">' + (same ? "涨幅最高（同龙头）" : "涨幅最高") + "</div>" +
+            '<div class="line1">' +
+              '<button type="button" class="stock-link" data-action="pick-brief-us" data-ticker="' +
+              esc(gainer) + '" data-name="' + esc(sec.nameCn) + '">' + esc(gainer) + "</button>" +
+              '<span class="pct">' + esc(gainerPct) + "</span>" +
+            "</div></div>";
+        }
+        html += "</div>";
+      });
+      html += "</div>";
+    }
+    html += '<div class="brief-links">';
+    if (day.mdPath) {
+      html += '<a href="' + esc(day.mdPath) + '" data-action="go">简报全文（Markdown）</a>';
+    }
+    var snap = DailyBriefings.META && DailyBriefings.META.pageSnapshot;
+    var onSnapshot = !!document.querySelector(".page-snapshot-banner");
+    if (snap && !onSnapshot) {
+      html += '<a href="' + esc(snap) + '" data-action="go">当日页面快照</a>';
+    }
+    html += "</div>";
+    root.innerHTML = html;
+  }
+
+  function renderBoard() {
+    var root = $("board-root");
+    var day = boardDay();
+    if (!day) {
+      if (briefingDay()) {
+        root.hidden = true;
+        root.innerHTML = "";
+        return;
+      }
+      root.hidden = false;
+      root.innerHTML = '<div class="date-head"><div><h2>' + state.selectedDate + " 美股收盘</h2>" +
+        '<p class="muted">' + beijingHint(state.selectedDate) + "</p></div></div>" +
+        '<p class="empty">当日暂无美股板块日榜。仍可在下方做个股分析并保存到这一天。</p>';
+      return;
+    }
+    root.hidden = false;
+    var html = '<div class="date-head"><div><h2>' + state.selectedDate + " 美股收盘</h2>" +
+      '<p class="muted">' + beijingHint(state.selectedDate) + "</p></div></div>";
+    if (SampleBoard.META) {
+      html += '<p class="muted">' + esc(SampleBoard.META.provider) +
+        " · " + esc(SampleBoard.META.start) + " 至 " + esc(SampleBoard.META.end) +
+        " · 抓取于 " + esc(SampleBoard.META.fetchedAt) + "</p>";
+    }
+    if (ctxReady() && MarketContext.META) {
+      html += '<p class="muted">' + esc(MarketContext.META.quoteSource) +
+        " · " + esc(MarketContext.META.newsSource) +
+        " · 抓取于 " + esc(MarketContext.META.fetchedAt) + "</p>";
+    }
+    if (day.note) html += '<p class="muted">' + esc(day.note) + "</p>";
+    html += '<div class="sector-grid">';
+    day.sectors.forEach(function (sec) {
+      var active = state.selectedSectorId === sec.id && state.drillMode === "sector" ? " active" : "";
+      var gainerLabel = sec.leader && sec.topGainer && sec.leader.ticker === sec.topGainer.ticker
+        ? "涨幅最高（同龙头）"
+        : "涨幅最高";
+      html += '<div class="sector-card' + active + '" data-action="pick-sector" data-id="' + esc(sec.id) + '" role="button" tabindex="0">' +
+        '<div class="name"><strong>' + esc(sec.nameCn) + '</strong><span class="pct ' + pctClass(sec.changePct) + '">' + fmtPct(sec.changePct) + "</span></div>" +
+        '<div class="en">' + esc(sec.nameEn) + "</div>" +
+        stockBlock("龙头", sec.leader, "leader") +
+        stockBlock(gainerLabel, sec.topGainer, "gainer");
+      if (ctxReady()) {
+        var seenUrl = {};
+        function takeNews(arr) {
+          return (arr || []).filter(function (n) {
+            if (!n || !n.url || seenUrl[n.url]) return false;
+            seenUrl[n.url] = true;
+            return true;
+          });
+        }
+        var lNews = sec.leader ? takeNews(MarketContext.usNews(state.selectedDate, sec.leader.ticker)) : [];
+        var gNews = [];
+        if (sec.topGainer && (!sec.leader || sec.topGainer.ticker !== sec.leader.ticker)) {
+          gNews = takeNews(MarketContext.usNews(state.selectedDate, sec.topGainer.ticker));
+        }
+        var sNews = takeNews(MarketContext.sectorNews(state.selectedDate, sec.id));
+        html += '<div class="sector-news" data-action="noop"><div class="label">当日资讯</div>';
+        if (!lNews.length && !gNews.length && !sNews.length) {
+          html += renderNewsList([], "当日暂无匹配资讯");
+        } else {
+          if (sec.leader && lNews.length) {
+            html += '<div class="news-group"><div class="news-group-label"><span class="role-chip leader">龙头</span>' +
+              esc(sec.leader.ticker) + " " + esc(sec.leader.name) + "</div>" +
+              renderNewsList(lNews) + "</div>";
+          }
+          if (sec.topGainer && gNews.length) {
+            html += '<div class="news-group"><div class="news-group-label"><span class="role-chip gainer">涨幅最高</span>' +
+              esc(sec.topGainer.ticker) + " " + esc(sec.topGainer.name) + "</div>" +
+              renderNewsList(gNews) + "</div>";
+          }
+          if (sNews.length) {
+            html += '<div class="news-group"><div class="news-group-label"><span class="role-chip sector">板块</span>当日消息</div>' +
+              renderNewsList(sNews) + "</div>";
+          }
+        }
+        html += "</div>";
+      }
+      html += "</div>";
+    });
+    html += "</div>";
+    $("board-root").innerHTML = html;
+  }
+
+  function renderBriefMapped(rows, title, hint) {
+    var root = $("drilldown-root");
+    if (!rows.length) {
+      root.innerHTML = '<div class="panel-head"><h2>' + esc(title) + "</h2></div>" +
+        '<p class="empty">该板块/个股暂无写入简报的映射 A 股。</p>';
+      return;
+    }
+    var body = rows.map(function (r) {
+      var a = parseAFromBrief(r.a);
+      return "<tr>" +
+        '<td><button type="button" class="stock-link" data-action="analyze" data-ticker="' + a.ticker + '">' +
+        esc(a.ticker) + "</button></td>" +
+        "<td>" + esc(a.name) + "</td>" +
+        '<td><span class="rel">' + esc(r.relation) + "</span></td>" +
+        '<td class="' + pctClass(r.dUsPct) + '">' + fmtPct(r.dUsPct) + "</td>" +
+        '<td class="' + pctClass(r.dReactPct) + '">' + fmtPct(r.dReactPct) + "</td>" +
+        "<td>" + esc(r.us) + " · " + esc(r.role) + "</td>" +
+        '<td><button type="button" class="btn ghost" data-action="analyze" data-ticker="' + a.ticker + '">分析此股</button></td>' +
+        "</tr>";
+    }).join("");
+    root.innerHTML = '<div class="panel-head"><h2>' + esc(title) + "</h2>" +
+      '<p class="muted">' + esc(hint) + "</p></div>" +
+      '<table class="table"><thead><tr><th>代码</th><th>名称</th><th>关系</th><th>A 美股日</th><th>A 反应日</th><th>对应美股</th><th></th></tr></thead><tbody>' +
+      body + "</tbody></table>";
+  }
+
+  function renderDrilldown() {
+    var root = $("drilldown-root");
+    if (state.drillMode === "brief-sector" && state.selectedBriefSector) {
+      var bDay = briefingDay();
+      var rows = ((bDay && bDay.mappedA) || []).filter(function (r) {
+        return r.sectorCn === state.selectedBriefSector;
+      });
+      renderBriefMapped(
+        rows,
+        "板块映射 A 股 · " + state.selectedBriefSector,
+        "点上方板块卡片后才列出该板块映射。A 反应日是对隔夜美股的下一 A 股交易日。"
+      );
+      return;
+    }
+    if (state.drillMode === "brief-us" && state.selectedUsTicker) {
+      var bDayUs = briefingDay();
+      var usRows = ((bDayUs && bDayUs.mappedA) || []).filter(function (r) {
+        return parseUsFromBrief(r.us) === state.selectedUsTicker;
+      });
+      renderBriefMapped(
+        usRows,
+        "个股映射 A 股 · " + state.selectedUsTicker,
+        "点美股代码后才列出该股对应 A 股。"
+      );
+      return;
+    }
+    if (state.drillMode === "sector" && state.selectedSectorId) {
+      var sec = MappingData.sectorById(state.selectedSectorId);
+      if (!sec) {
+        root.innerHTML = '<p class="empty">未找到该板块映射。</p>';
+        return;
+      }
+      var rows = sec.aShares.map(function (a) {
+        var q = ctxReady() ? MarketContext.quote(a.ticker, state.selectedDate) : null;
+        return "<tr>" +
+          '<td><button type="button" class="stock-link" data-action="analyze" data-ticker="' + a.ticker + '">' + a.ticker + "</button></td>" +
+          "<td>" + esc(a.name) + "</td>" +
+          "<td>板块映射</td>" +
+          "<td class=\"col-quote\">" + fmtQuote(q) + "</td>" +
+          "<td class=\"col-note\">" + esc(a.note) + "</td>" +
+          '<td><button type="button" class="btn ghost" data-action="analyze" data-ticker="' + a.ticker + '">分析此股</button></td>' +
+        "</tr>";
+      }).join("");
+      var weekNews = "";
+      if (ctxReady()) {
+        var miss = [];
+        weekNews = sec.aShares.map(function (a) {
+          var items = MarketContext.aNews(state.selectedDate, a.ticker);
+          if (!items.length) {
+            miss.push(a.ticker + " " + a.name);
+            return "";
+          }
+          return '<div class="related-news"><h3>' + esc(a.ticker) + " " + esc(a.name) + " · 近一周资讯</h3>" +
+            renderNewsList(items) + "</div>";
+        }).join("");
+        if (miss.length && weekNews) {
+          weekNews += '<p class="muted">其余 ' + miss.length + " 只近一周暂无匹配资讯。</p>";
+        } else if (!weekNews) {
+          weekNews = '<p class="empty">近一周暂无匹配资讯。</p>';
+        }
+        weekNews = '<div class="mapped-news"><div class="mapped-news-title">关联 A 股 · 近一周资讯</div>' + weekNews + "</div>";
+      }
+      root.innerHTML = '<div class="panel-head"><h2>板块映射 A 股 · ' + esc(sec.nameCn) + "</h2>" +
+        '<p class="muted">行业/概念级候选。行情为该美股交易日对应的最近 A 股收盘：前收、前日涨幅、5 日与 10 日涨幅。</p></div>' +
+        '<table class="table"><thead><tr><th>代码</th><th>名称</th><th>关系</th><th>行情</th><th>说明</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>" +
+        (weekNews || '<p class="empty">近一周暂无匹配资讯。</p>');
+      return;
+    }
+    if (state.drillMode === "us" && state.selectedUsTicker) {
+      var us = MappingData.usByTicker(state.selectedUsTicker);
+      var name = us ? us.name : state.selectedUsTicker;
+      var mapped = MappingData.getMappedFromUs(state.selectedUsTicker);
+      if (!mapped.length) {
+        root.innerHTML = '<div class="panel-head"><h2>个股映射 A 股 · ' + esc(state.selectedUsTicker) + " " + esc(name) + "</h2></div>" +
+          '<p class="empty">种子映射中暂无对应 A 股。可在个股分析中手动记录，或后续补充 mapping.js。</p>';
+        return;
+      }
+      var body = mapped.map(function (a) {
+        var q = ctxReady() ? MarketContext.quote(a.ticker, state.selectedDate) : null;
+        return "<tr>" +
+          '<td><button type="button" class="stock-link" data-action="analyze" data-ticker="' + a.ticker + '">' + a.ticker + "</button></td>" +
+          "<td>" + esc(a.name) + "</td>" +
+          '<td><span class="rel">' + esc(a.relation) + "</span></td>" +
+          "<td class=\"col-quote\">" + fmtQuote(q) + "</td>" +
+          "<td class=\"col-note\">" + esc(a.note) + "</td>" +
+          '<td><button type="button" class="btn ghost" data-action="analyze" data-ticker="' + a.ticker + '">分析此股</button></td>' +
+        "</tr>";
+      }).join("");
+      var weekNews = "";
+      if (ctxReady()) {
+        var usDayNews = MarketContext.usNews(state.selectedDate, state.selectedUsTicker);
+        if (usDayNews.length) {
+          weekNews += '<div class="related-news"><h3>' + esc(state.selectedUsTicker) + " " + esc(name) + " · 当日资讯</h3>" +
+            renderNewsList(usDayNews) + "</div>";
+        }
+        weekNews += mapped.map(function (a) {
+          var items = MarketContext.aNews(state.selectedDate, a.ticker);
+          if (!items.length) return "";
+          return '<div class="related-news"><h3>' + esc(a.ticker) + " " + esc(a.name) + " · 近一周资讯</h3>" +
+            renderNewsList(items) + "</div>";
+        }).join("");
+        if (!weekNews) weekNews = '<p class="empty">近一周暂无匹配资讯。</p>';
+        weekNews = '<div class="mapped-news"><div class="mapped-news-title">对应股票资讯</div>' + weekNews + "</div>";
+      }
+      root.innerHTML = '<div class="panel-head"><h2>个股映射 A 股 · ' + esc(state.selectedUsTicker) + " " + esc(name) + "</h2>" +
+        '<p class="muted">按业务关系列出。行情为对应最近 A 股收盘价、前日涨幅、5 日与 10 日涨幅。</p></div>' +
+        '<table class="table"><thead><tr><th>代码</th><th>名称</th><th>关系</th><th>行情</th><th>说明</th><th></th></tr></thead><tbody>' + body + "</tbody></table>" +
+        (weekNews || '<p class="empty">近一周暂无匹配资讯。</p>');
+      return;
+    }
+    root.innerHTML = '<div class="panel-head"><h2>映射明细</h2><p class="muted">点击上方板块查看该板块 A 股；点击美股代码查看业务对应 A 股。</p></div>' +
+      '<p class="empty">尚未选择板块或美股个股。</p>';
+  }
+
+  function fillAnalysisForm(ticker) {
+    var t = MappingData.normalize(ticker);
+    state.focusTicker = t;
+    $("ticker-input").value = t;
+    var sample = SampleAnalysis[t] || null;
+    $("fund-text").value = sample ? sample.fundamental : "";
+    $("tech-text").value = sample ? sample.technical : "";
+    $("no-data-hint").hidden = !!sample;
+    renderAnalysisChips();
+  }
+
+  function renderAnalysisChips() {
+    var t = state.focusTicker;
+    var box = $("analysis-chips");
+    if (!t) {
+      box.innerHTML = "";
+      $("save-hint").textContent = "将保存到 " + state.selectedDate;
+      return;
+    }
+    var rel = MappingData.getRelated(t);
+    var chips = [];
+    function chip(item, active) {
+      return '<button type="button" class="chip' + (active ? " active" : "") + '" data-action="analyze" data-ticker="' + esc(item.ticker) + '">' +
+        esc(item.ticker) + " " + esc(item.name) + (item.relation ? " · " + esc(item.relation) : "") + "</button>";
+    }
+    chips.push(chip(rel.primary, rel.primary.ticker === t));
+    rel.mapped.forEach(function (m) {
+      chips.push(chip(m, m.ticker === t));
+    });
+    box.innerHTML = chips.join("");
+    $("save-hint").textContent = "将保存到 " + state.selectedDate + " · " + (rel.mapped.length ? "含 " + rel.mapped.length + " 只映射股" : "无种子映射");
+  }
+
+  function renderShots() {
+    $("shot-previews").innerHTML = state.draftShots.map(function (s, idx) {
+      return '<div class="shot-card"><img src="' + s.dataUrl + '" alt="" />' +
+        '<div class="cap"><span>' + esc(s.name) + '</span>' +
+        '<button type="button" class="btn ghost" data-action="remove-shot" data-idx="' + idx + '">删除</button></div></div>';
+    }).join("");
+  }
+
+  function noteMatchesTickers(note, tickers) {
+    var set = {};
+    tickers.forEach(function (t) { set[t] = true; });
+    if (set[note.primaryTicker]) return true;
+    var mapped = note.mappedTickers || [];
+    for (var i = 0; i < mapped.length; i++) {
+      if (set[mapped[i]]) return true;
+    }
+    return false;
+  }
+
+  function renderNoteCard(note, withJump) {
+    var mapped = note.mappedTickers || [];
+    var mappedHtml;
+    if (!mapped.length) {
+      mappedHtml = '<p class="muted">映射股：无</p>';
+    } else {
+      var relatedMap = {};
+      MappingData.getRelated(note.primaryTicker).mapped.forEach(function (m) {
+        relatedMap[m.ticker] = m;
+      });
+      mappedHtml = '<div class="mapped-list"><div class="mapped-label">映射股</div><ul>' +
+        mapped.map(function (t) {
+          var name = MappingData.getStockName(t);
+          var rel = relatedMap[t];
+          var relText = rel && rel.relation ? " · " + esc(rel.relation) : "";
+          return '<li><span class="mono">' + esc(t) + "</span> " + esc(name) + relText + "</li>";
+        }).join("") + "</ul></div>";
+    }
+
+    var shots = note.screenshots || [];
+    var shotsHtml;
+    if (!shots.length) {
+      shotsHtml = '<p class="muted">无走势截图</p>';
+    } else {
+      shotsHtml = '<div class="note-shots">' + shots.map(function (s, idx) {
+        var cap = s.name || "走势截图";
+        return '<figure class="shot-card note-shot" data-action="view-shot" data-note-id="' + esc(note.id) + '" data-idx="' + idx + '">' +
+          '<img src="' + s.dataUrl + '" alt="' + esc(cap) + '" />' +
+          "<figcaption>" + esc(cap) + "</figcaption></figure>";
+      }).join("") + "</div>";
+    }
+
+    var jump = withJump
+      ? '<button type="button" class="btn ghost" data-action="pick-date" data-date="' + note.usDate + '">查看当日</button>'
+      : "";
+    return '<article class="note-card">' +
+      "<h3>" + esc(note.primaryTicker) + " " + esc(MappingData.getStockName(note.primaryTicker)) +
+      " · " + esc(note.usDate) + "</h3>" +
+      mappedHtml +
+      (note.fundamental ? "<p><strong>基本面</strong> " + esc(note.fundamental) + "</p>" : "") +
+      (note.technical ? "<p><strong>技术面</strong> " + esc(note.technical) + "</p>" : "") +
+      shotsHtml +
+      '<div class="chip-row">' + jump +
+        '<button type="button" class="btn ghost danger" data-action="delete-note" data-id="' + esc(note.id) + '">删除</button>' +
+      "</div></article>";
+  }
+
+  function renderDayNotes() {
+    var list = notesForDate(state.selectedDate);
+    if (!list.length) {
+      $("day-notes-root").innerHTML = '<p class="empty">这一天还没有保存分析。</p>';
+      return;
+    }
+    $("day-notes-root").innerHTML = '<div class="note-list">' + list.map(function (n) { return renderNoteCard(n, false); }).join("") + "</div>";
+  }
+
+  function renderSearchChips() {
+    $("search-chips").innerHTML = state.searchSelected.map(function (t) {
+      return '<span class="chip">' + esc(t) + " " + esc(MappingData.getStockName(t)) +
+        '<button type="button" class="x" data-action="remove-search" data-ticker="' + esc(t) + '">×</button></span>';
+    }).join("");
+  }
+
+  function renderSearchDropdown() {
+    var box = $("search-dropdown");
+    if (!state.searchOpen || !state.searchQuery) {
+      box.hidden = true;
+      box.innerHTML = "";
+      return;
+    }
+    var hits = MappingData.searchStocks(state.searchQuery);
+    if (!hits.length) {
+      box.hidden = false;
+      box.innerHTML = '<button type="button" disabled>无匹配种子股票</button>';
+      return;
+    }
+    box.hidden = false;
+    box.innerHTML = hits.map(function (s) {
+      return '<button type="button" data-action="add-search" data-ticker="' + s.ticker + '">' +
+        esc(s.ticker) + " " + esc(s.name) + " · " + (s.market === "A" ? "A股" : "美股") + "</button>";
+    }).join("");
+  }
+
+  function renderSearchResults() {
+    var root = $("search-results-root");
+    if (!state.searchSelected.length) {
+      root.innerHTML = '<p class="empty">尚未选择股票。在上方输入代码或名称并点选，可同时查看多只股票的全部已存分析。</p>';
+      return;
+    }
+    var hits = state.notes.filter(function (n) { return noteMatchesTickers(n, state.searchSelected); });
+    if (!hits.length) {
+      root.innerHTML = '<p class="empty">所选股票尚无已保存分析。可先在下方分析后点「保存到日历」。</p>';
+      return;
+    }
+    root.innerHTML = '<div class="note-list">' + hits.map(function (n) { return renderNoteCard(n, true); }).join("") + "</div>";
+  }
+
+  function openShot(noteId, idx) {
+    var note = null;
+    for (var i = 0; i < state.notes.length; i++) {
+      if (state.notes[i].id === noteId) {
+        note = state.notes[i];
+        break;
+      }
+    }
+    if (!note || !note.screenshots || !note.screenshots[idx]) return;
+    var shot = note.screenshots[idx];
+    $("modal-root").innerHTML =
+      '<div class="modal-backdrop" data-action="close-modal"><div class="lightbox" data-action="noop">' +
+        '<img src="' + shot.dataUrl + '" alt="' + esc(shot.name || "走势截图") + '" />' +
+        "<p>" + esc(shot.name || "走势截图") + " · " + esc(note.primaryTicker) + " " +
+        esc(MappingData.getStockName(note.primaryTicker)) + "</p>" +
+        '<button type="button" class="btn primary" data-action="close-modal">关闭</button>' +
+      "</div></div>";
+  }
+
+  function renderModal(open) {
+    var root = $("modal-root");
+    if (!open) {
+      root.innerHTML = "";
+      return;
+    }
+    root.innerHTML =
+      '<div class="modal-backdrop" data-action="close-modal"><div class="modal" data-action="noop">' +
+        "<h2>映射说明</h2>" +
+        "<p>本页种子映射用于演示「美股热度 → A 股候选」流程，不是完备的研究结论，也不是投资建议。</p>" +
+        "<h3>两层结构</h3>" +
+        "<ul><li>板块 → A 股：点击日榜板块，列出行业/概念候选。</li>" +
+        "<li>美股个股 → A 股：点击龙头或涨幅最高代码，按业务关系列出。</li></ul>" +
+        "<h3>关系类型</h3>" +
+        "<ul><li>对标：商业模式或产品地位相近。</li>" +
+        "<li>供应链：上下游配套。</li>" +
+        "<li>同概念：同一产业主题，但并非直接竞争对手。</li>" +
+        "<li>ADR：同一公司的不同上市地。</li></ul>" +
+        "<h3>行情数据</h3>" +
+        "<p>日榜由 tools/fetch_board.py 抓取美股日K。关联 A 股行情与资讯由 tools/fetch_context.py 抓取后写入 js/data/market-context.js。隔夜简报写入 briefings/YYYY-MM-DD.md 与 js/data/briefings.js，页面按日历日期读取。当日 index.html 另存到 archive/ 下带时间戳的目录。页面不在浏览器里实时拉数。资讯按标题/摘要匹配龙头、涨幅最高与映射股名称，越近的交易日覆盖越好。</p>" +
+        '<button type="button" class="btn primary" data-action="close-modal">关闭</button>' +
+      "</div></div>";
+  }
+
+  function render() {
+    renderTopbar();
+    renderCalendar();
+    renderBriefing();
+    renderBoard();
+    renderDrilldown();
+    renderAnalysisChips();
+    renderShots();
+    renderDayNotes();
+    renderSearchChips();
+    renderSearchDropdown();
+    renderSearchResults();
+  }
+
+  function pickDate(dateStr) {
+    state.selectedDate = dateStr;
+    var p = dateStr.split("-");
+    state.viewYear = Number(p[0]);
+    state.viewMonth = Number(p[1]) - 1;
+    state.selectedSectorId = null;
+    state.selectedUsTicker = null;
+    state.selectedBriefSector = null;
+    state.drillMode = null;
+    render();
+  }
+
+  function loadNotes() {
+    return AppStore.getAll().then(function (rows) {
+      state.notes = rows;
+    }).catch(function (err) {
+      console.error(err);
+      showToast("本地数据库不可用，分析将无法保存");
+    });
+  }
+
+  function compressImage(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error("读取图片失败")); };
+      reader.onload = function () {
+        var img = new Image();
+        img.onerror = function () { reject(new Error("图片无法解析")); };
+        img.onload = function () {
+          var maxDim = 1600;
+          var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          var q = 0.72;
+          var dataUrl = canvas.toDataURL("image/jpeg", q);
+          while (dataUrl.length > MAX_SHOT_BYTES * 1.37 && q > 0.4) {
+            q -= 0.08;
+            dataUrl = canvas.toDataURL("image/jpeg", q);
+          }
+          if (dataUrl.length > MAX_SHOT_BYTES * 1.37) {
+            reject(new Error("截图过大，请换更小的图片（建议 2MB 内）"));
+            return;
+          }
+          resolve({ name: file.name || "screenshot.jpg", dataUrl: dataUrl, type: "image/jpeg" });
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function saveNote() {
+    var ticker = MappingData.normalize($("ticker-input").value || state.focusTicker);
+    if (!ticker) {
+      showToast("请先输入股票代码并点分析");
+      return;
+    }
+    var fund = $("fund-text").value.trim();
+    var tech = $("tech-text").value.trim();
+    if (!fund && !tech && !state.draftShots.length) {
+      showToast("请至少填写一段分析或上传一张截图");
+      return;
+    }
+    var rel = MappingData.getRelated(ticker);
+    var note = {
+      id: AppStore.uid(),
+      usDate: state.selectedDate,
+      primaryTicker: ticker,
+      mappedTickers: rel.mapped.map(function (m) { return m.ticker; }),
+      fundamental: fund,
+      technical: tech,
+      screenshots: state.draftShots.slice(),
+      createdAt: new Date().toISOString()
+    };
+    AppStore.save(note).then(function () {
+      state.draftShots = [];
+      return loadNotes();
+    }).then(function () {
+      render();
+      showToast("已保存到 " + note.usDate);
+    }).catch(function (err) {
+      console.error(err);
+      showToast("保存失败");
+    });
+  }
+
+  function bind() {
+    document.addEventListener("click", function (e) {
+      var t = e.target.closest("[data-action]");
+      if (!t) {
+        if (!$("search-box").contains(e.target)) {
+          state.searchOpen = false;
+          renderSearchDropdown();
+        }
+        return;
+      }
+      var action = t.getAttribute("data-action");
+      if (action === "noop") {
+        e.stopPropagation();
+        return;
+      }
+      if (action === "prev-month") {
+        if (state.viewMonth === 0) { state.viewYear -= 1; state.viewMonth = 11; }
+        else state.viewMonth -= 1;
+        render();
+        return;
+      }
+      if (action === "next-month") {
+        if (state.viewMonth === 11) { state.viewYear += 1; state.viewMonth = 0; }
+        else state.viewMonth += 1;
+        render();
+        return;
+      }
+      if (action === "goto-latest") {
+        pickDate(latestDataDate() || state.selectedDate);
+        return;
+      }
+      if (action === "goto-today") {
+        var now = new Date();
+        pickDate(ymd(now.getFullYear(), now.getMonth(), now.getDate()));
+        return;
+      }
+      if (action === "pick-date") {
+        pickDate(t.getAttribute("data-date"));
+        return;
+      }
+      if (action === "go") {
+        e.preventDefault();
+        var dest = t.href || t.getAttribute("href");
+        if (dest) window.location.assign(dest);
+        return;
+      }
+      if (action === "pick-sector") {
+        state.selectedSectorId = t.getAttribute("data-id");
+        state.selectedUsTicker = null;
+        state.selectedBriefSector = null;
+        state.drillMode = "sector";
+        render();
+        return;
+      }
+      if (action === "pick-brief-sector") {
+        state.selectedBriefSector = t.getAttribute("data-name");
+        state.selectedSectorId = null;
+        state.selectedUsTicker = null;
+        state.drillMode = "brief-sector";
+        render();
+        $("drilldown-root").scrollIntoView({ behavior: "smooth", block: "nearest" });
+        return;
+      }
+      if (action === "pick-brief-us") {
+        e.stopPropagation();
+        state.selectedUsTicker = MappingData.normalize(t.getAttribute("data-ticker"));
+        state.selectedBriefSector = t.getAttribute("data-name");
+        state.selectedSectorId = null;
+        state.drillMode = "brief-us";
+        render();
+        $("drilldown-root").scrollIntoView({ behavior: "smooth", block: "nearest" });
+        return;
+      }
+      if (action === "pick-us") {
+        e.stopPropagation();
+        state.selectedUsTicker = MappingData.normalize(t.getAttribute("data-ticker"));
+        state.drillMode = "us";
+        state.selectedBriefSector = null;
+        var us = MappingData.usByTicker(state.selectedUsTicker);
+        if (us) state.selectedSectorId = us.sectorId;
+        render();
+        return;
+      }
+      if (action === "analyze") {
+        e.stopPropagation();
+        fillAnalysisForm(t.getAttribute("data-ticker"));
+        $("ticker-input").scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+      if (action === "remove-shot") {
+        state.draftShots.splice(Number(t.getAttribute("data-idx")), 1);
+        renderShots();
+        return;
+      }
+      if (action === "add-search") {
+        var add = MappingData.normalize(t.getAttribute("data-ticker"));
+        if (state.searchSelected.indexOf(add) === -1) state.searchSelected.push(add);
+        state.searchQuery = "";
+        $("search-input").value = "";
+        state.searchOpen = false;
+        renderSearchChips();
+        renderSearchDropdown();
+        renderSearchResults();
+        return;
+      }
+      if (action === "remove-search") {
+        var rm = t.getAttribute("data-ticker");
+        state.searchSelected = state.searchSelected.filter(function (x) { return x !== rm; });
+        renderSearchChips();
+        renderSearchResults();
+        return;
+      }
+      if (action === "view-shot") {
+        e.stopPropagation();
+        openShot(t.getAttribute("data-note-id"), Number(t.getAttribute("data-idx")));
+        return;
+      }
+      if (action === "delete-note") {
+        AppStore.remove(t.getAttribute("data-id")).then(loadNotes).then(function () {
+          render();
+          showToast("已删除");
+        });
+        return;
+      }
+      if (action === "close-modal") {
+        renderModal(false);
+      }
+    });
+
+    $("analysis-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var t = MappingData.normalize($("ticker-input").value);
+      if (!t) {
+        showToast("请输入股票代码");
+        return;
+      }
+      fillAnalysisForm(t);
+      if (!MappingData.isKnown(t) && !SampleAnalysis[t]) {
+        $("no-data-hint").hidden = false;
+      }
+    });
+
+    $("save-btn").addEventListener("click", saveNote);
+
+    $("shot-input").addEventListener("change", function (e) {
+      var files = Array.prototype.slice.call(e.target.files || []);
+      e.target.value = "";
+      files.forEach(function (file) {
+        compressImage(file).then(function (shot) {
+          state.draftShots.push(shot);
+          renderShots();
+        }).catch(function (err) {
+          showToast(err.message || "截图处理失败");
+        });
+      });
+    });
+
+    $("search-input").addEventListener("input", function (e) {
+      state.searchQuery = e.target.value;
+      state.searchOpen = true;
+      renderSearchDropdown();
+    });
+
+    $("search-input").addEventListener("focus", function () {
+      if (state.searchQuery) {
+        state.searchOpen = true;
+        renderSearchDropdown();
+      }
+    });
+
+    $("btn-mapping-help").addEventListener("click", function () {
+      renderModal(true);
+    });
+  }
+
+  bind();
+  $("save-hint").textContent = "将保存到 " + state.selectedDate;
+  loadNotes().then(render);
+})();

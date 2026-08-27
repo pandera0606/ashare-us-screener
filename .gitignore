@@ -1,0 +1,9 @@
+.DS_Store
+Thumbs.db
+Desktop.ini
+__pycache__/
+*.pyc
+.env
+.env.*
+briefings/.obsidian/
+_news_probe.json

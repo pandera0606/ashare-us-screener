@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>A股筛选 · 美股热度映射</title>
+  <!-- pageUpdated: 2026-08-27 15:32 CST · briefingUsDate: 2026-08-26 -->
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-title">A股筛选 · 美股热度映射</div>
+      <div class="brand-meta">
+        <span class="badge">v0.1.8</span>
+        <span class="muted" id="page-stamp">日历按美股交易日归档</span>
+      </div>
+    </div>
+    <div class="topbar-tools">
+      <button type="button" class="btn ghost" id="btn-mapping-help">映射说明</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="sidebar">
+      <div id="calendar-root"></div>
+      <div class="cal-legend">
+        <span><i class="dot gold"></i>有板块日榜</span>
+        <span><i class="dot brief"></i>有隔夜简报</span>
+        <span><i class="dot blue"></i>有分析笔记</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="panel search-panel">
+        <div class="panel-head">
+          <h2>多选检索</h2>
+          <p class="muted">搜索并多选股票，分析结果紧挨在输入框下方。</p>
+        </div>
+        <div class="search-box" id="search-box">
+          <label class="sr-only" for="search-input">多选搜索股票</label>
+          <input id="search-input" type="text" autocomplete="off" placeholder="输入代码或名称，可同时多选" />
+          <div id="search-dropdown" class="search-dropdown" hidden></div>
+          <div id="search-chips" class="chip-row"></div>
+        </div>
+        <div id="search-results-root" class="search-results"></div>
+      </section>
+
+      <section id="briefing-root" class="panel"></section>
+      <section id="board-root" class="panel"></section>
+      <section id="drilldown-root" class="panel"></section>
+
+      <section class="panel analysis-panel">
+        <div class="panel-head">
+          <h2>个股分析</h2>
+          <p class="muted">输入 A 股或美股代码，展示该股及双向映射，可编辑后保存到当前日历日。</p>
+        </div>
+        <form id="analysis-form" class="analysis-form">
+          <input id="ticker-input" type="text" maxlength="12" placeholder="例如 NVDA 或 002594" />
+          <button type="submit" class="btn primary">分析</button>
+        </form>
+        <div id="analysis-chips" class="chip-row"></div>
+        <p id="no-data-hint" class="hint" hidden>暂无内置基本面/技术面数据。请上传走势截图并在下方填写备注后保存。</p>
+        <div class="analysis-cols">
+          <div>
+            <label for="fund-text">基本面</label>
+            <textarea id="fund-text" rows="8" placeholder="营收结构、竞争位置、催化剂、风险……"></textarea>
+          </div>
+          <div>
+            <label for="tech-text">技术面</label>
+            <textarea id="tech-text" rows="8" placeholder="趋势、均线、量能、关键价位……"></textarea>
+          </div>
+        </div>
+        <div class="shot-block">
+          <div class="shot-head">
+            <span>走势截图</span>
+            <label class="btn ghost file-btn">
+              上传截图
+              <input id="shot-input" type="file" accept="image/*" multiple hidden />
+            </label>
+          </div>
+          <div id="shot-previews" class="shot-previews"></div>
+        </div>
+        <div class="analysis-actions">
+          <button type="button" class="btn primary" id="save-btn">保存到日历</button>
+          <span id="save-hint" class="muted"></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>当日已存分析</h2>
+        </div>
+        <div id="day-notes-root"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-root" class="toast" hidden></div>
+
+  <footer class="footer">
+    种子映射与示例行情仅供研究框架演示，不构成投资建议。后续优化请同步更新 README 版本记录。
+  </footer>
+
+  <script src="js/data/mapping.js"></script>
+  <script src="js/data/sample-board.js"></script>
+  <script src="js/data/market-context.js"></script>
+  <script src="js/data/sample-analysis.js"></script>
+  <script src="js/data/briefings.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
