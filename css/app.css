@@ -586,13 +586,6 @@ textarea:focus {
   font-variant-numeric: tabular-nums;
 }
 
-.table td.col-num .asof {
-  display: block;
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 400;
-}
-
 .table td.col-num .up,
 .table td.col-num .down {
   font-weight: 700;

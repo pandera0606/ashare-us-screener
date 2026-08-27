@@ -5,6 +5,7 @@ Usage:
   python tools/fetch_context.py
   python tools/fetch_context.py --start 2026-08-17 --end 2026-08-25
   python tools/fetch_context.py --quotes-only
+  python tools/fetch_context.py --news-only
 """
 from __future__ import print_function
 
@@ -197,11 +198,23 @@ def quote_as_of(hist, asof):
     }
 
 
-def ymd_of_unix(ts):
+def dt_of_unix(ts):
     try:
-        return dt.datetime.fromtimestamp(int(ts), TZ8).strftime("%Y-%m-%d")
+        return dt.datetime.fromtimestamp(int(ts), TZ8).strftime("%Y-%m-%d %H:%M")
     except (TypeError, ValueError, OSError):
         return ""
+
+
+def news_when(show, ts=None):
+    s = str(show or "").strip()
+    if len(s) >= 16 and s[10] in " T":
+        return s[:16].replace("T", " ")
+    full = dt_of_unix(ts) if ts else ""
+    if full:
+        return full
+    if len(s) >= 10 and s[4] == "-":
+        return s[:10]
+    return ""
 
 
 def add_days(ymd, n):
@@ -230,7 +243,7 @@ def fetch_sina_news(pages=8, num=50):
             items.append({
                 "title": title,
                 "url": link,
-                "date": ymd_of_unix(it.get("ctime") or it.get("intime") or 0),
+                "date": news_when("", it.get("ctime") or it.get("intime")),
                 "source": it.get("media_name") or "新浪财经",
                 "blob": (title + " " + intro).lower(),
             })
@@ -261,11 +274,11 @@ def fetch_em_news(column, pages=2, size=20):
             seen.add(link)
             title = it.get("title") or ""
             intro = it.get("summary") or ""
-            show = (it.get("showTime") or "")[:10]
+            show = it.get("showTime") or it.get("date") or ""
             items.append({
                 "title": title,
                 "url": link,
-                "date": show,
+                "date": news_when(show),
                 "source": it.get("mediaName") or "东方财富",
                 "blob": (title + " " + intro).lower(),
             })
@@ -298,7 +311,8 @@ def match_news(pool, keywords, start, end, limit, title_only=False):
     keys_l = [k.lower() for k in keys]
     scored = []
     for it in pool:
-        if it["date"] and (it["date"] < start or it["date"] > end):
+        day = (it.get("date") or "")[:10]
+        if day and (day < start or day > end):
             continue
         blob = ((it.get("title") or "") if title_only else (it.get("blob") or it.get("title") or "")).lower()
         hits = [keys[i] for i, k in enumerate(keys_l) if k and k in blob]
@@ -363,6 +377,8 @@ def main():
     ap.add_argument("--end", default="2026-08-26")
     ap.add_argument("--quotes-only", action="store_true",
                     help="只重抓 A 股日K，沿用现有 market-context.js 里的资讯")
+    ap.add_argument("--news-only", action="store_true",
+                    help="只重抓资讯，沿用现有 market-context.js 里的行情")
     args = ap.parse_args()
 
     sectors, us_map, a_shares = parse_mapping()
@@ -374,37 +390,43 @@ def main():
     existing = load_existing_payload() or {}
     old_quotes = existing.get("quotes") or {}
 
-    print("fetch A-share klines", len(a_shares))
     quotes = {}
     miss_a = []
-    for i, ticker in enumerate(sorted(a_shares)):
-        try:
-            hist = fetch_a_kline(ticker)
-            per_day = {}
-            for day in days:
-                q = quote_as_of(hist, day["usDate"])
-                if q:
-                    per_day[day["usDate"]] = q
-            if per_day:
-                quotes[ticker] = per_day
-                print("OK", ticker, a_shares[ticker], "days", len(per_day))
-            else:
+    if args.news_only:
+        quotes = old_quotes
+        raw_miss = ((existing.get("META") or {}).get("aMiss") or "")
+        miss_a = [x for x in str(raw_miss).split(",") if x]
+        print("reuse quotes", len(quotes))
+    else:
+        print("fetch A-share klines", len(a_shares))
+        for i, ticker in enumerate(sorted(a_shares)):
+            try:
+                hist = fetch_a_kline(ticker)
+                per_day = {}
+                for day in days:
+                    q = quote_as_of(hist, day["usDate"])
+                    if q:
+                        per_day[day["usDate"]] = q
+                if per_day:
+                    quotes[ticker] = per_day
+                    print("OK", ticker, a_shares[ticker], "days", len(per_day))
+                else:
+                    miss_a.append(ticker)
+                    print("EMPTY", ticker)
+            except Exception as e:
                 miss_a.append(ticker)
-                print("EMPTY", ticker)
-        except Exception as e:
-            miss_a.append(ticker)
-            print("MISS", ticker, type(e).__name__, e)
-        time.sleep(0.2)
+                print("MISS", ticker, type(e).__name__, e)
+            time.sleep(0.2)
 
-    kept = 0
-    for ticker, per_day in old_quotes.items():
-        if ticker not in quotes and per_day:
-            quotes[ticker] = per_day
-            kept += 1
-            if ticker in miss_a:
-                miss_a.remove(ticker)
-    if kept:
-        print("kept previous quotes", kept)
+        kept = 0
+        for ticker, per_day in old_quotes.items():
+            if ticker not in quotes and per_day:
+                quotes[ticker] = per_day
+                kept += 1
+                if ticker in miss_a:
+                    miss_a.remove(ticker)
+        if kept:
+            print("kept previous quotes", kept)
 
     news = None
     news_pool_n = 0

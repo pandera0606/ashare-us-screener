@@ -7,3 +7,4 @@ __pycache__/
 .env.*
 briefings/.obsidian/
 _news_probe.json
+tools/pull_latest.log

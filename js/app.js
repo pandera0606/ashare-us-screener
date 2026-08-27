@@ -341,10 +341,7 @@
     if (col.kind === "pct") {
       return '<span class="' + pctClass(v) + '">' + fmtPct(v) + "</span>";
     }
-    var extra = (col.key === "prevClose" && q.asOf)
-      ? '<span class="asof">' + esc(q.asOf) + "</span>"
-      : "";
-    return '<span class="mono">' + v + "</span>" + extra;
+    return '<span class="mono">' + v + "</span>";
   }
 
   function quoteTds(q) {

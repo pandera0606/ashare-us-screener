@@ -2,7 +2,7 @@
 
 给后续 Agent 与维护者用的项目说明。改功能时必须同步更新本文档，并在文末「版本记录」追加条目。更短的协作约定见 [AGENTS.md](AGENTS.md)。
 
-当前版本：**v0.1.11**（2026-08-27）
+当前版本：**v0.1.13**（2026-08-28）
 
 ## 1. 项目目标
 
@@ -38,6 +38,8 @@ tools/fetch_context.py     离线抓取 A 股日K与资讯，重写 market-conte
 tools/archive_index.py     把当前 index.html 拷到 archive/ 并写时间戳
 tools/serve.py             局域网静态服务（电脑开着时手机也可打开）
 tools/make_icons.py        生成主屏幕图标 PNG
+tools/pull_latest.ps1      本机从 GitHub 拉取云端日榜/简报
+tools/install_pull_task.ps1 注册 Windows 计划任务（工作日 8:20 + 登录时）
 manifest.json              网页应用清单（添加到主屏幕）
 sw.js                      Service Worker（仅 http/https，file:// 不注册）
 icons/                     主屏幕 / Apple Touch 图标
@@ -99,6 +101,32 @@ python tools/serve.py
 窄屏默认先看结果：顶上日期条 → 隔夜简报 → 日榜 → 映射 → 当日笔记。点「换日期」才弹出日历；「多选检索」和「个股分析」默认收起。平板竖屏同手机；约 721px 以上日榜卡片两列。
 
 本版不做封装进 App Store 的原生壳（Capacitor / Xcode）。那是另一条线，需要开发者账号。
+
+### 3.2 本机看到云端日榜 / 简报
+
+工作日北京时间 **8:00**，Cursor 自动化把日榜和隔夜简报提交到 GitHub `main`。它改的是远程仓库，**不会**直接改这个 iCloud 文件夹。本机要再拉一次，双击 `index.html` 才是新数据。
+
+两条任务前后衔接，不能合成一条：
+
+1. 云端自动化写入 GitHub。
+2. 本机计划任务运行 `tools/pull_latest.ps1`，把 `main` 拉回当前文件夹。
+3. 重新打开 `index.html`（`file://` 不走 Service Worker，关掉旧标签再打开即可）。
+
+首次在项目根目录注册计划任务：
+
+```
+powershell -ExecutionPolicy Bypass -File tools/install_pull_task.ps1
+```
+
+触发：工作日 **8:20**（此时起最多轮询约 40 分钟，等云端提交到）；用户登录时再拉一次（电脑当时没开着的兜底）。也可手动运行 `tools/pull_latest.ps1 -Once`。日志在 `tools/pull_latest.log`，不进仓库。
+
+电脑关机或休眠时 8:20 不会跑，登录后再拉。本机有未提交改动时脚本会先暂存再快进拉取，成功后恢复；冲突则远程数据留下，本机改动留在 stash，需手工处理。
+
+卸载：
+
+```
+powershell -ExecutionPolicy Bypass -File tools/install_pull_task.ps1 -Uninstall
+```
 
 ## 4. 数据 schema
 
@@ -174,7 +202,9 @@ QuoteAsOf {
 }
 
 NewsItem {
-  title, url, date, source,
+  title, url,
+  date: "YYYY-MM-DD HH:MM",  // 无时刻时仅日期
+  source,
   tags: string[]        // 命中的关键词，以及 龙头 / 涨幅最高 / 板块 / 近一周
 }
 ```
@@ -193,9 +223,10 @@ NewsItem {
 ```
 python tools/fetch_context.py --start 2026-08-17 --end 2026-08-26
 python tools/fetch_context.py --quotes-only   # 只重抓日K（含当日涨幅），沿用已有资讯
+python tools/fetch_context.py --news-only     # 只重抓资讯（含发布时间），沿用已有行情
 ```
 
-通常先跑 `fetch_board.py` 再跑本脚本，以便按日榜里的龙头 / 涨幅最高去匹配资讯。`--quotes-only` 失败时会尽量保留文件里已有行情。
+通常先跑 `fetch_board.py` 再跑本脚本，以便按日榜里的龙头 / 涨幅最高去匹配资讯。`--quotes-only` / `--news-only` 失败时会尽量保留文件里已有的另一半数据。
 
 ### 4.5 DailyBriefing（隔夜简报）
 
@@ -298,7 +329,7 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 - 当日笔记展示映射股代码与名称；截图以较大预览呈现，点击可放大。
 - 事件委托：`document` 监听 `[data-action]`。板块卡片必须是 `div` 而不是 `button`，以免嵌套按钮被浏览器拆开。
 - 分析表单（textarea、文件选择）不在每次 `render()` 时重建，避免光标丢失。
-- 涨红跌绿遵循 A 股习惯。板块卡片上「龙头」金色标签、「涨幅最高」红色标签；资讯区独立深底、标题加粗偏亮；映射表行情拆成字段列（前收 / 当日 / 前日 / 5日 / 10日），点击字段名排序。
+- 涨红跌绿遵循 A 股习惯。板块卡片上「龙头」金色标签、「涨幅最高」红色标签；资讯区独立深底、标题加粗偏亮，条目展示日期与时间；映射表行情拆成字段列（前收 / 当日 / 前日 / 5日 / 10日），点击字段名排序。前收只显示价格。
 - 顶栏「映射说明」解释两层映射、关系类型，以及日榜 / A 股行情与资讯的离线抓取方式。
 
 ## 8. 给 Agent 的扩展清单（尚未实现，待用户补充需求）
@@ -312,6 +343,18 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 做上述任何一项，都要改 README 版本记录，并核对 schema 是否向后兼容。IndexedDB 升版本时在 `store.js` 的 `onupgradeneeded` 写迁移，不要直接改 keyPath 导致旧笔记丢失。
 
 ## 9. 版本记录
+
+### v0.1.13 — 2026-08-28
+
+- 本机可用 Windows 计划任务把 GitHub 上的日榜/简报拉回当前文件夹：`tools/pull_latest.ps1`、`tools/install_pull_task.ps1`（工作日 8:20 + 登录时）。
+- 云端 8:00 自动化仍只写 GitHub，不能直接改 iCloud 里的 `index.html`。
+- 兼容性：IndexedDB 与数据文件未改。未注册计划任务时用法不变，需要时手动 `git pull`。
+
+### v0.1.12 — 2026-08-27
+
+- 映射表「前收」只显示价格，不再附日期。
+- 资讯 meta 展示到分钟（`YYYY-MM-DD HH:MM`）。`fetch_context.py` 支持 `--news-only`。
+- 兼容性：IndexedDB 未改。旧资讯只有日期时仍只显示日期。
 
 ### v0.1.11 — 2026-08-27
 
