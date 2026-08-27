@@ -2,13 +2,109 @@
 var DailyBriefings = (function () {
   var META = {
     timezone: "Asia/Shanghai",
-    savedAt: "2026-08-27 17:10",
-    latestUsDate: "2026-08-26",
+    savedAt: "2026-08-28 07:27",
+    latestUsDate: "2026-08-27",
     mdDir: "briefings",
-    pageSnapshot: "archive/2026-08-27_1710.html"
+    pageSnapshot: "archive/2026-08-28_0727.html"
   };
 
   var DAYS = [
+    {
+      usDate: "2026-08-27",
+      generatedAt: "2026-08-28 07:25",
+      savedAt: "2026-08-28 07:25",
+      source: "腾讯财经日K · 种子美股等权",
+      mdPath: "briefings/2026-08-27.md",
+      headline: "隔夜主线是软件财报与英伟达，不是全面风险偏好",
+      summary: "十板块五个收红。软件SaaS 等权 +8.43%，几乎被 Salesforce 单日 +22.58% 抬起来，龙头微软只涨 1.75%。AI算力第二完全靠英伟达财报后 +8.74% 放量。A 股 8/28 反应日尚未开盘，不编造涨跌。",
+      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。",
+      stats: [
+        { label: "软件SaaS（等权第一）", value: "+8.43%", tone: "up" },
+        { label: "AI算力（第二）", value: "+3.08%", tone: "up" },
+        { label: "光伏储能（第三）", value: "+1.83%", tone: "up" },
+        { label: "创新药（最弱）", value: "−1.91%", tone: "down" }
+      ],
+      sectors: [
+        { nameCn: "软件SaaS", changePct: 8.43, leader: "MSFT +1.75%", topGainer: "CRM +22.58%", note: "5 只样本，CRM 单票权重大" },
+        { nameCn: "AI算力", changePct: 3.08, leader: "NVDA +8.74%", topGainer: "NVDA +8.74%", note: "龙头即最高" },
+        { nameCn: "光伏储能", changePct: 1.83, leader: "FSLR +2.02%", topGainer: "ENPH +2.16%", note: "3 只样本，趋势仍回调" },
+        { nameCn: "半导体", changePct: 1.63, leader: "NVDA +8.74%", topGainer: "NVDA +8.74%", note: "英伟达领涨，设备股分化" },
+        { nameCn: "新能源车", changePct: 0.78, leader: "TSLA +2.60%", topGainer: "RIVN +2.88%", note: "BYDDY 无日K" },
+        { nameCn: "金融", changePct: -0.36, leader: "JPM −0.64%", topGainer: "GS +0.04%", note: "温和回落" },
+        { nameCn: "能源", changePct: -0.72, leader: "XOM −1.11%", topGainer: "CVX −0.22%", note: "原油链偏弱" },
+        { nameCn: "互联网科技", changePct: -1.01, leader: "AAPL +0.36%", topGainer: "AAPL +0.36%", note: "苹果微涨，奈飞/亚马逊收绿" },
+        { nameCn: "消费", changePct: -1.26, leader: "COST −2.24%", topGainer: "NKE −0.39%", note: "防守品种齐跌" },
+        { nameCn: "创新药", changePct: -1.91, leader: "LLY −1.12%", topGainer: "VRTX +0.05%", note: "礼来、诺和诺德、Moderna 齐跌" }
+      ],
+      top3: [
+        {
+          nameCn: "软件SaaS",
+          changePct: 8.43,
+          take: "财报日把等权第一送上去。龙头微软只是跟涨，趋势仍标震荡。",
+          bullets: [
+            "龙头 MSFT 微软 +1.75%，量能 0.95×，MA5 上穿 MA20、震荡",
+            "最高 CRM Salesforce +22.58%，量能 3.95×，站上 MA20、上升",
+            "NOW +10.04%、ADBE +5.73%、ORCL +2.06%。五只里四只收红、微软最弱"
+          ]
+        },
+        {
+          nameCn: "AI算力",
+          changePct: 3.08,
+          take: "英伟达自己就是板块。网络设备没有接力昨天的反弹。",
+          bullets: [
+            "龙头即最高 NVDA 英伟达 +8.74%，量能 2.39×，站上 MA10、震荡",
+            "PLTR +4.75% 趋势上升；SMCI +2.86%",
+            "GOOGL −0.39%；ANET −0.57%，量能 0.61×。昨天的网络设备领涨没有续上"
+          ]
+        },
+        {
+          nameCn: "光伏储能",
+          changePct: 1.83,
+          take: "三只都收红，但幅度小、趋势仍回调，不像趋势启动。",
+          bullets: [
+            "龙头 FSLR 第一太阳能 +2.02%，量能 0.57×，跌破 MA10",
+            "最高 ENPH Enphase +2.16%，量能大致持平，仍跌破 MA20",
+            "SEDG +1.30%，昨天 +10.71% 的超跌反弹没有再加速"
+          ]
+        }
+      ],
+      mappedA: [
+        { sectorCn: "软件SaaS", us: "CRM +22.58%", role: "涨幅最高", a: "用友网络 600588", relation: "对标", dUsPct: 1.19, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "CRM +22.58%", role: "涨幅最高", a: "浪潮软件 600756", relation: "同概念", dUsPct: 0.56, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "MSFT +1.75%", role: "龙头", a: "金山办公 688111", relation: "对标", dUsPct: 2.23, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "MSFT +1.75%", role: "龙头", a: "用友网络 600588", relation: "同概念", dUsPct: 1.19, dReactPct: null },
+        { sectorCn: "AI算力", us: "NVDA +8.74%", role: "龙头", a: "寒武纪 688256", relation: "对标", dUsPct: 2.75, dReactPct: null },
+        { sectorCn: "AI算力", us: "NVDA +8.74%", role: "龙头", a: "海光信息 688041", relation: "对标", dUsPct: 6.5, dReactPct: null },
+        { sectorCn: "AI算力", us: "NVDA +8.74%", role: "龙头", a: "工业富联 601138", relation: "供应链", dUsPct: 5.43, dReactPct: null },
+        { sectorCn: "AI算力", us: "NVDA +8.74%", role: "龙头", a: "中科曙光 603019", relation: "供应链", dUsPct: 2.72, dReactPct: null },
+        { sectorCn: "光伏储能", us: "ENPH +2.16%", role: "涨幅最高", a: "阳光电源 300274", relation: "对标", dUsPct: -12.24, dReactPct: null },
+        { sectorCn: "光伏储能", us: "ENPH +2.16%", role: "涨幅最高", a: "固德威 688390", relation: "对标", dUsPct: -1.76, dReactPct: null },
+        { sectorCn: "光伏储能", us: "FSLR +2.02%", role: "龙头", a: "隆基绿能 601012", relation: "对标", dUsPct: -1.06, dReactPct: null },
+        { sectorCn: "光伏储能", us: "FSLR +2.02%", role: "龙头", a: "通威股份 600438", relation: "对标", dUsPct: -0.92, dReactPct: null }
+      ],
+      logic: [
+        "隔夜不是普涨。等权前三是软件SaaS、AI算力、光伏储能，但广度一般：创新药 −1.91%，消费 −1.26%，互联网科技和能源也收绿。资金在买财报，而不是抬所有风险资产。",
+        "软件第一名不可外推成「SaaS 主线」。板块第一主要靠 CRM +22.58%（量能 3.95×）和 NOW +10.04%。龙头微软只涨 1.75%。把单票财报映射成 A 股软件板块趋势，需要 8/28 用友、金山自己确认。",
+        "英伟达扭转了 8/26 的放量回调。NVDA 从 −1.59% 变成 +8.74%、量能 2.39×、重新站上 MA10。ANET 昨天领涨今天收绿。A 股 8/27 海光、工业富联大涨是对更早交易日的反应，不能当成已经兑现今夜英伟达。"
+      ],
+      caveats: [
+        { title: "软件样本只有 5 只", detail: "等权第一很容易被单票 22% 财报劫持，不能当成板块趋势。" },
+        { title: "A 股反应日尚未开盘", detail: "8/28 日K 不存在。把 8/27 的 A 股涨跌当成对今夜美股的映射，方向会反。" },
+        { title: "NVDA 同时是 AI 与半导体龙头", detail: "两个板块的「最高」其实是同一只票，半导体等权只有 +1.63%，设备股并没有同步大涨。" },
+        { title: "光伏仍在均线下方", detail: "三只都收红但 FSLR 量能 0.57×，阳光电源 8/27 刚跌 12.24%。" },
+        { title: "BYDDY 无日K", detail: "新能源车等权少一只，板块涨幅可能略有偏差。" }
+      ],
+      watch: [
+        { point: "Salesforce 是否一日游", check: "CRM 量能 3.95× 之后能否站稳 MA20；A 股用友、浪潮软件 8/28 是否跟。" },
+        { point: "英伟达能否守住 MA10", check: "若财报次日回吐并再跌破 MA10，AI/半导体内部会从龙头扭转变成假突破。" },
+        { point: "海光 / 工业富联的 8/28", check: "8/27 已经大涨的国产算力，面对今夜英伟达，是继续还是高开低走。" },
+        { point: "ANET 与光模块", check: "昨天网络设备领涨今天收绿；天孚、新易盛若 8/28 走弱，说明 8/27 更像一日游。" },
+        { point: "光伏映射是否还要看", check: "需要 FSLR 放量、阳光电源止跌。" },
+        { point: "创新药是否止跌", check: "礼来、诺和诺德、Moderna 连跌时，不要用前三板块掩盖这条空头腿。" }
+      ],
+      tickersOk: 49,
+      tickersMiss: ["BYDDY"]
+    },
     {
       usDate: "2026-08-26",
       generatedAt: "2026-08-27 15:06",

@@ -626,8 +626,8 @@
           esc(a.ticker) + "</button>") +
         td("名称", esc(a.name)) +
         td("关系", '<span class="rel">' + esc(r.relation) + "</span>") +
-        td("A 美股日", '<span class="' + pctClass(r.dUsPct) + '">' + fmtPct(r.dUsPct) + "</span>", "col-num") +
-        td("A 反应日", '<span class="' + pctClass(r.dReactPct) + '">' + fmtPct(r.dReactPct) + "</span>", "col-num") +
+        td("A 美股日", numVal(r.dUsPct) ? '<span class="muted">—</span>' : '<span class="' + pctClass(r.dUsPct) + '">' + fmtPct(r.dUsPct) + "</span>", "col-num") +
+        td("A 反应日", numVal(r.dReactPct) ? '<span class="muted">—</span>' : '<span class="' + pctClass(r.dReactPct) + '">' + fmtPct(r.dReactPct) + "</span>", "col-num") +
         td("对应美股", esc(r.us) + " · " + esc(r.role)) +
         td("", '<button type="button" class="btn ghost" data-action="analyze" data-ticker="' + a.ticker + '">分析此股</button>') +
         "</tr>";
