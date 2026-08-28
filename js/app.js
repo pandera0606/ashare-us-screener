@@ -140,6 +140,27 @@
     state.toastTimer = setTimeout(function () { el.hidden = true; }, 2200);
   }
 
+  function hasUnsavedWork() {
+    var fund = $("fund-text");
+    var tech = $("tech-text");
+    if (state.draftShots.length) return true;
+    if (fund && fund.value.trim()) return true;
+    if (tech && tech.value.trim()) return true;
+    return false;
+  }
+
+  function reloadApp() {
+    showToast("正在刷新…");
+    var go = function () { location.reload(); };
+    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.getRegistration) {
+      go();
+      return;
+    }
+    navigator.serviceWorker.getRegistration().then(function (reg) {
+      return reg ? reg.update() : null;
+    }).catch(function () {}).then(go);
+  }
+
   function isNarrow() {
     return window.matchMedia("(max-width: 980px)").matches;
   }
@@ -215,6 +236,7 @@
         '<span class="muted">' + esc(dateBarMarks(state.selectedDate)) + "</span>" +
       "</div>" +
       '<div class="date-bar-actions">' +
+        '<button type="button" class="btn ghost" data-action="reload-app">刷新</button>' +
         '<button type="button" class="btn ghost" data-action="goto-latest">最近</button>' +
         '<button type="button" class="btn ghost" data-action="toggle-cal">' +
           (state.calDrawerOpen ? "收起" : "换日期") + "</button>" +
@@ -1082,6 +1104,10 @@
         e.stopPropagation();
         return;
       }
+      if (action === "reload-app") {
+        reloadApp();
+        return;
+      }
       if (action === "toggle-cal") {
         state.calDrawerOpen = !state.calDrawerOpen;
         renderDateBar();
@@ -1290,7 +1316,30 @@
   renderDateBar();
   loadNotes().then(render);
 
-  if ((location.protocol === "http:" || location.protocol === "https:") && "serviceWorker" in navigator) {
-    navigator.serviceWorker.register(new URL("sw.js", document.baseURI)).catch(function () {});
+  var pageLoadedAt = Date.now();
+  var swRefreshing = false;
+
+  function registerServiceWorker() {
+    if (location.protocol !== "http:" && location.protocol !== "https:") return;
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register(new URL("sw.js", document.baseURI)).then(function (reg) {
+      reg.update();
+    }).catch(function () {});
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (swRefreshing) return;
+      swRefreshing = true;
+      location.reload();
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState !== "visible") return;
+      navigator.serviceWorker.getRegistration().then(function (reg) {
+        if (reg) reg.update();
+      }).catch(function () {});
+      if (Date.now() - pageLoadedAt < 2 * 60 * 60 * 1000) return;
+      if (hasUnsavedWork()) return;
+      location.reload();
+    });
   }
+
+  registerServiceWorker();
 })();

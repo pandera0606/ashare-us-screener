@@ -83,7 +83,8 @@ button, input, textarea {
 
 .topbar-tools {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: flex-start;
 }
 
@@ -989,6 +990,8 @@ textarea {
   .date-bar-actions {
     display: flex;
     flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 6px;
   }
 

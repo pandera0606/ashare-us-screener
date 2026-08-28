@@ -2,7 +2,7 @@
 
 给后续 Agent 与维护者用的项目说明。改功能时必须同步更新本文档，并在文末「版本记录」追加条目。更短的协作约定见 [AGENTS.md](AGENTS.md)。
 
-当前版本：**v0.1.15**（2026-08-28）
+当前版本：**v0.1.16**（2026-08-28）
 
 ## 1. 项目目标
 
@@ -86,9 +86,9 @@ iPhone / iPad **不能**把 iCloud 里的 `index.html` 当成 App：系统预览
 2. 发布后地址一般是：`https://pandera0606.github.io/ashare-us-screener/`
 3. 用 **Safari**（iPhone）或 **Chrome**（Android）打开该地址，不要用微信内置浏览器。
 4. iPhone：分享 → **添加到主屏幕**。Android：菜单 → **添加到主屏幕** / **安装应用**。
-5. 之后从主屏幕图标打开，全屏、无浏览器地址栏。
+5. 之后从主屏幕图标打开，全屏、无浏览器地址栏。主屏幕是独立应用，**没有 Safari 的下拉刷新**。要点顶栏或日期条上的「刷新」，才会重新拉取 GitHub 上的日榜/简报。离开超过约 2 小时再打开，且分析区没有未保存草稿时，也会自动重载。
 
-注意：GitHub Pages 会把当前站点内容放到网上。仓库若是公开的，简报和映射别人也能打开。私有仓库的 Pages 通常需要付费方案。笔记仍在**这部手机这只浏览器**的 IndexedDB 里，和电脑、和其他设备不互通。更新日榜/简报后要再 push，主屏幕应用才会拿到新数据（Service Worker 缓存名随版本号，见 `sw.js`）。
+注意：GitHub Pages 会把当前站点内容放到网上。仓库若是公开的，简报和映射别人也能打开。私有仓库的 Pages 通常需要付费方案。笔记仍在**这部手机这只浏览器**的 IndexedDB 里，和电脑、和其他设备不互通。更新日榜/简报后要再 push。Service Worker 联网时先拉网上的新文件，离线才用缓存。
 
 **备用：电脑局域网服务**（电脑开着、同一 Wi-Fi 时）
 
@@ -325,7 +325,7 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 
 - 单页结构：顶栏 → 多选检索 → 隔夜简报（结论 + 前三卡片）→ 日榜 → 映射明细（点选后才出现）→ 个股分析 → 当日已存分析。窄屏把简报/日榜提前，检索与分析默认折叠。
 - 日历绿色点 = 有隔夜简报；工作副本是根目录 `index.html`，按日快照是 `archive/YYYY-MM-DD_HHMM.html`。
-- 手机/平板：要像 App 一样从主屏幕打开，用 GitHub Pages 的 https 地址「添加到主屏幕」；电脑在线时也可用 `python tools/serve.py`。不要依赖 iCloud 里直接点 HTML。
+- 手机/平板：要像 App 一样从主屏幕打开，用 GitHub Pages 的 https 地址「添加到主屏幕」；电脑在线时也可用 `python tools/serve.py`。不要依赖 iCloud 里直接点 HTML。主屏幕全屏没有系统下拉刷新，用页内「刷新」。
 - 当日笔记展示映射股代码与名称；截图以较大预览呈现，点击可放大。
 - 事件委托：`document` 监听 `[data-action]`。板块卡片必须是 `div` 而不是 `button`，以免嵌套按钮被浏览器拆开。
 - 分析表单（textarea、文件选择）不在每次 `render()` 时重建，避免光标丢失。
@@ -343,6 +343,12 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 做上述任何一项，都要改 README 版本记录，并核对 schema 是否向后兼容。IndexedDB 升版本时在 `store.js` 的 `onupgradeneeded` 写迁移，不要直接改 keyPath 导致旧笔记丢失。
 
 ## 9. 版本记录
+
+### v0.1.16 — 2026-08-28
+
+- 主屏幕全屏没有系统下拉刷新：顶栏和手机日期条增加「刷新」，重新拉取 GitHub Pages 上的日榜/简报。
+- Service Worker 改为联网优先、离线回落到缓存；打开时检查更新。离开超过约 2 小时再进入且分析区无未保存草稿时自动重载。
+- 兼容性：IndexedDB 未改。缓存名改为 `ashare-us-screener-v0.1.16`，旧的 cache-first 缓存会被清掉。手机要等本次推到 `main` 并打开一次后才会换上新逻辑。
 
 ### v0.1.15 — 2026-08-28
 
