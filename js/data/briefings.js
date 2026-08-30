@@ -2,13 +2,111 @@
 var DailyBriefings = (function () {
   var META = {
     timezone: "Asia/Shanghai",
-    savedAt: "2026-08-28 07:27",
-    latestUsDate: "2026-08-27",
+    savedAt: "2026-08-31 06:39",
+    latestUsDate: "2026-08-28",
     mdDir: "briefings",
-    pageSnapshot: "archive/2026-08-28_0727.html"
+    pageSnapshot: "archive/2026-08-31_0639.html"
   };
 
   var DAYS = [
+    {
+      usDate: "2026-08-28",
+      generatedAt: "2026-08-31 06:37",
+      savedAt: "2026-08-31 06:37",
+      source: "腾讯财经日K · 种子美股等权",
+      mdPath: "briefings/2026-08-28.md",
+      headline: "隔夜主线是七巨头轮动与英伟达回吐，不是全面风险偏好",
+      summary: "十板块五个收红。互联网科技等权 +2.29%，主要靠亚马逊 +3.97% 反抽。软件SaaS 第二是 ServiceNow 续涨 +4.54%。英伟达 −4.57% 放量跌破 MA20，半导体 −3.56%、光伏 −4.68%。A 股 8/31 反应日尚未开盘，不编造涨跌。",
+      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。",
+      stats: [
+        { label: "互联网科技（等权第一）", value: "+2.29%", tone: "up" },
+        { label: "软件SaaS（第二）", value: "+1.58%", tone: "up" },
+        { label: "消费（第三）", value: "+1.32%", tone: "up" },
+        { label: "光伏储能（最弱）", value: "−4.68%", tone: "down" }
+      ],
+      sectors: [
+        { nameCn: "互联网科技", changePct: 2.29, leader: "AAPL +1.63%", topGainer: "AMZN +3.97%", note: "4 只样本，AMZN 仍在 MA20 下" },
+        { nameCn: "软件SaaS", changePct: 1.58, leader: "MSFT +1.68%", topGainer: "NOW +4.54%", note: "5 只样本，CRM 高位消化" },
+        { nameCn: "消费", changePct: 1.32, leader: "COST +1.16%", topGainer: "NKE +3.02%", note: "4 只样本，趋势仍回调" },
+        { nameCn: "能源", changePct: 0.62, leader: "XOM +0.17%", topGainer: "CVX +1.05%", note: "3 只样本，小幅收红" },
+        { nameCn: "金融", changePct: 0.01, leader: "JPM +0.96%", topGainer: "JPM +0.96%", note: "龙头即最高，近乎持平" },
+        { nameCn: "新能源车", changePct: -0.92, leader: "TSLA −1.71%", topGainer: "XPEV +1.77%", note: "BYDDY 无日K，RIVN −4.35%" },
+        { nameCn: "创新药", changePct: -1.49, leader: "LLY −0.13%", topGainer: "LLY −0.13%", note: "龙头即最高，四只齐绿" },
+        { nameCn: "AI算力", changePct: -1.81, leader: "NVDA −4.57%", topGainer: "GOOGL +1.74%", note: "英伟达回吐拖累等权" },
+        { nameCn: "半导体", changePct: -3.56, leader: "NVDA −4.57%", topGainer: "MU −0.27%", note: "13 只样本，MRVL −10.28%" },
+        { nameCn: "光伏储能", changePct: -4.68, leader: "FSLR −2.68%", topGainer: "FSLR −2.68%", note: "三只齐跌，趋势回调" }
+      ],
+      top3: [
+        {
+          nameCn: "互联网科技",
+          changePct: 2.29,
+          take: "七巨头内部换人。龙头苹果跟涨，亚马逊从均线下方反抽，趋势仍标回调。",
+          bullets: [
+            "龙头 AAPL 苹果 +1.63%，量能 0.90×，站上 MA20、上升",
+            "最高 AMZN 亚马逊 +3.97%，量能 1.30×，跌破 MA20、回调",
+            "NFLX +2.35% 趋势上升；META +1.21%。四只全红，但样本只有 4 只"
+          ]
+        },
+        {
+          nameCn: "软件SaaS",
+          changePct: 1.58,
+          take: "昨天被 Salesforce 单票抬上去的板块，今天变成更均匀的跟涨，幅度小得多。",
+          bullets: [
+            "龙头 MSFT 微软 +1.68%，量能 1.02×，MA5 上穿 MA20、震荡",
+            "最高 NOW ServiceNow +4.54%，量能 1.59×，站上 MA20、上升",
+            "CRM +1.57%，量能仍 2.25×；ADBE +0.82%；ORCL −0.72%。五只里四只收红"
+          ]
+        },
+        {
+          nameCn: "消费",
+          changePct: 1.32,
+          take: "从昨天等权 −1.26% 的防守下跌里反抽，均线位置没有修好。",
+          bullets: [
+            "龙头 COST 开市客 +1.16%，量能 0.80×，跌破 MA10、回调",
+            "最高 NKE 耐克 +3.02%，量能大致持平，仍跌破 MA10、回调",
+            "KO +0.67%；PG +0.45%。四只全红，但都不是趋势启动"
+          ]
+        }
+      ],
+      mappedA: [
+        { sectorCn: "互联网科技", us: "AMZN +3.97%", role: "涨幅最高", a: "焦点科技 002315", relation: "同概念", dUsPct: 0.47, dReactPct: null },
+        { sectorCn: "互联网科技", us: "AMZN +3.97%", role: "涨幅最高", a: "浪潮信息 000977", relation: "供应链", dUsPct: -1.06, dReactPct: null },
+        { sectorCn: "互联网科技", us: "AAPL +1.63%", role: "龙头", a: "立讯精密 002475", relation: "供应链", dUsPct: -1.01, dReactPct: null },
+        { sectorCn: "互联网科技", us: "AAPL +1.63%", role: "龙头", a: "歌尔股份 002241", relation: "供应链", dUsPct: -1.59, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "NOW +4.54%", role: "涨幅最高", a: "泛微网络 603039", relation: "对标", dUsPct: 1.84, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "NOW +4.54%", role: "涨幅最高", a: "致远互联 688369", relation: "对标", dUsPct: 1.01, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "MSFT +1.68%", role: "龙头", a: "金山办公 688111", relation: "对标", dUsPct: 1.29, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "MSFT +1.68%", role: "龙头", a: "用友网络 600588", relation: "同概念", dUsPct: 0.69, dReactPct: null },
+        { sectorCn: "消费", us: "NKE +3.02%", role: "涨幅最高", a: "华利集团 300979", relation: "供应链", dUsPct: -0.06, dReactPct: null },
+        { sectorCn: "消费", us: "NKE +3.02%", role: "涨幅最高", a: "探路者 300005", relation: "同概念", dUsPct: 7.04, dReactPct: null },
+        { sectorCn: "消费", us: "COST +1.16%", role: "龙头", a: "永辉超市 601933", relation: "同概念", dUsPct: 0.64, dReactPct: null },
+        { sectorCn: "消费", us: "COST +1.16%", role: "龙头", a: "家家悦 603708", relation: "同概念", dUsPct: 1.4, dReactPct: null }
+      ],
+      logic: [
+        "隔夜不是普涨。等权前三是互联网科技、软件SaaS、消费，但广度一般：光伏储能 −4.68%，半导体 −3.56%，AI算力 −1.81%，创新药和新能源车也收绿。资金在七巨头内部换人，并回吐昨天的英伟达财报。",
+        "互联网第一名不可外推成「科技主线」。板块第一主要靠 AMZN +3.97% 和 NFLX +2.35%。亚马逊仍跌破 MA20。A 股立讯、歌尔 8/28 收绿是对更早交易日的反应，不能当成已经兑现今夜苹果/亚马逊。",
+        "英伟达把 8/27 的财报阳线吐了一半。NVDA 从 +8.74% 变成 −4.57%、量能 1.53×、重新跌破 MA20。半导体等权 −3.56%，迈威尔 −10.28%。A 股 8/28 海光、工业富联已经不像 8/27 的大涨；8/31 才是对今夜这笔回吐的第一根日K。"
+      ],
+      caveats: [
+        { title: "互联网样本只有 4 只", detail: "等权第一很容易被亚马逊单票反抽劫持，不能当成板块趋势。" },
+        { title: "A 股反应日尚未开盘", detail: "8/31 日K 不存在。把 8/28 的 A 股涨跌当成对今夜美股的映射，方向会反。" },
+        { title: "NVDA 同时是 AI 与半导体龙头", detail: "两个板块都被同一只票拖累；半导体「最高」美光只跌 0.27%，设备股跌得更深。" },
+        { title: "探路者与耐克不是同一条产业链", detail: "探路者 8/28 +7.04% 是「同概念」户外服饰，华利集团这条供应链几乎平盘。" },
+        { title: "消费仍在均线下方", detail: "四只都收红但 COST / NKE / PG 仍跌破 MA10。" },
+        { title: "BYDDY 无日K", detail: "新能源车等权少一只，板块涨幅可能略有偏差。" }
+      ],
+      watch: [
+        { point: "英伟达回吐是否扩散", check: "NVDA 跌破 MA20 之后，若继续破位，AI/半导体会从财报次日回吐变成趋势转弱。" },
+        { point: "海光 / 工业富联 / 寒武纪的 8/31", check: "8/27 已大涨、8/28 基本平盘的国产算力，面对今夜英伟达 −4.57%，是高开低走还是不再跟。" },
+        { point: "亚马逊能否回到 MA20", check: "AMZN 仍跌破 MA20；若反抽失败，互联网第一名就是一日轮动。" },
+        { point: "ServiceNow / Salesforce 是否续得住", check: "NOW 连涨两天、CRM 量能 2.25× 高位消化；A 股泛微、金山、用友 8/31 是否跟。" },
+        { point: "苹果链 8/31", check: "立讯、歌尔 8/28 已收绿；若苹果续涨而组装链不跟，映射只是种子不是传导。" },
+        { point: "光伏是否止跌", check: "FSLR / ENPH / SEDG 齐跌，阳光电源 8/27 刚跌 12.24%。" },
+        { point: "创新药是否止跌", check: "礼来、诺和诺德、Moderna 继续收绿时，不要用前三板块掩盖这条空头腿。" }
+      ],
+      tickersOk: 49,
+      tickersMiss: ["BYDDY"]
+    },
     {
       usDate: "2026-08-27",
       generatedAt: "2026-08-28 07:25",
