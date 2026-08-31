@@ -2,13 +2,111 @@
 var DailyBriefings = (function () {
   var META = {
     timezone: "Asia/Shanghai",
-    savedAt: "2026-08-31 06:39",
-    latestUsDate: "2026-08-28",
+    savedAt: "2026-09-01 06:37",
+    latestUsDate: "2026-08-31",
     mdDir: "briefings",
-    pageSnapshot: "archive/2026-08-31_0639.html"
+    pageSnapshot: "archive/2026-09-01_0637.html"
   };
 
   var DAYS = [
+    {
+      usDate: "2026-08-31",
+      generatedAt: "2026-09-01 06:36",
+      savedAt: "2026-09-01 06:36",
+      source: "腾讯财经日K · 种子美股等权",
+      mdPath: "briefings/2026-08-31.md",
+      headline: "隔夜主线是原油能源，科技从周五的轮动里退出来",
+      summary: "十板块四个收红，两个几乎持平。能源等权 +2.16%，资讯写能源是标普500唯一收涨行业、布伦特突破90美元。半导体第二 +0.55%，是周五 −3.56% 之后的弱反抽。软件只剩 +0.19%，微软 −1.22%。互联网最弱 −1.30%，亚马逊回吐周五。A 股 9/1 反应日尚未开盘，不编造涨跌。",
+      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。",
+      stats: [
+        { label: "能源（等权第一）", value: "+2.16%", tone: "up" },
+        { label: "半导体（第二）", value: "+0.55%", tone: "up" },
+        { label: "软件SaaS（第三）", value: "+0.19%", tone: "up" },
+        { label: "互联网科技（最弱）", value: "−1.30%", tone: "down" }
+      ],
+      sectors: [
+        { nameCn: "能源", changePct: 2.16, leader: "XOM +2.71%", topGainer: "XOM +2.71%", note: "3 只样本，龙头即最高" },
+        { nameCn: "半导体", changePct: 0.55, leader: "NVDA +1.48%", topGainer: "QCOM +3.83%", note: "13 只样本，设备股仍绿" },
+        { nameCn: "软件SaaS", changePct: 0.19, leader: "MSFT −1.22%", topGainer: "NOW +2.27%", note: "5 只样本，龙头收绿" },
+        { nameCn: "AI算力", changePct: 0.03, leader: "NVDA +1.48%", topGainer: "NVDA +1.48%", note: "龙头即最高，谷歌 −2.09%" },
+        { nameCn: "创新药", changePct: 0.02, leader: "LLY −1.52%", topGainer: "MRNA +1.70%", note: "龙头弱于 Moderna" },
+        { nameCn: "光伏储能", changePct: -0.32, leader: "FSLR −1.25%", topGainer: "SEDG +2.52%", note: "三只分化，趋势仍回调" },
+        { nameCn: "新能源车", changePct: -0.39, leader: "TSLA +5.51%", topGainer: "TSLA +5.51%", note: "特斯拉单票，蔚来/Lucid 拖累" },
+        { nameCn: "消费", changePct: -0.43, leader: "COST −0.17%", topGainer: "PG +0.93%", note: "耐克回吐周五" },
+        { nameCn: "金融", changePct: -0.66, leader: "JPM −0.45%", topGainer: "JPM −0.45%", note: "三只齐绿" },
+        { nameCn: "互联网科技", changePct: -1.3, leader: "AAPL −0.89%", topGainer: "NFLX −0.82%", note: "4 只全绿，亚马逊 −2.50%" }
+      ],
+      top3: [
+        {
+          nameCn: "能源",
+          changePct: 2.16,
+          take: "8 月收官只有能源在涨。三只石油股全红，龙头即最高，趋势仍标震荡。",
+          bullets: [
+            "龙头即最高 XOM 埃克森美孚 +2.71%，量能 1.29×，站上 MA5、震荡",
+            "CVX +2.12%，量能 1.51×；COP +1.64%。资讯：能源是标普500唯一收涨行业，布伦特破 90",
+            "样本只有 3 只，等权第一就是油价，不是风格切换"
+          ]
+        },
+        {
+          nameCn: "半导体",
+          changePct: 0.55,
+          take: "周五 −3.56% 之后的弱反抽。领涨的是高通，不是设备股，也不是再来一脚英伟达。",
+          bullets: [
+            "龙头 NVDA 英伟达 +1.48%，量能 0.97×，站上 MA10、震荡",
+            "最高 QCOM 高通 +3.83%，量能 1.32×，MA5 上穿 MA20、震荡",
+            "MU +2.77%；设备股 AMAT / LRCX / KLAC 小跌，迈威尔 −2.29%。13 只里大约一半红"
+          ]
+        },
+        {
+          nameCn: "软件SaaS",
+          changePct: 0.19,
+          take: "ServiceNow 连涨，微软把板块等权从跟涨打回几乎持平。",
+          bullets: [
+            "龙头 MSFT 微软 −1.22%，量能 1.03×，MA5 上穿 MA20、震荡",
+            "最高 NOW ServiceNow +2.27%，量能 1.42×，站上 MA20、上升",
+            "CRM +0.60%；ADBE +0.44%；ORCL −1.15%。五只里三只收红，龙头最弱"
+          ]
+        }
+      ],
+      mappedA: [
+        { sectorCn: "能源", us: "XOM +2.71%", role: "龙头", a: "中国石油 601857", relation: "对标", dUsPct: 1.69, dReactPct: null },
+        { sectorCn: "能源", us: "XOM +2.71%", role: "龙头", a: "中国海油 600938", relation: "对标", dUsPct: 1.52, dReactPct: null },
+        { sectorCn: "半导体", us: "QCOM +3.83%", role: "涨幅最高", a: "卓胜微 300782", relation: "供应链", dUsPct: 2.05, dReactPct: null },
+        { sectorCn: "半导体", us: "QCOM +3.83%", role: "涨幅最高", a: "汇顶科技 603160", relation: "同概念", dUsPct: 5.97, dReactPct: null },
+        { sectorCn: "半导体", us: "NVDA +1.48%", role: "龙头", a: "寒武纪 688256", relation: "对标", dUsPct: 6.26, dReactPct: null },
+        { sectorCn: "半导体", us: "NVDA +1.48%", role: "龙头", a: "海光信息 688041", relation: "对标", dUsPct: 3.43, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "NOW +2.27%", role: "涨幅最高", a: "泛微网络 603039", relation: "对标", dUsPct: 3.91, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "NOW +2.27%", role: "涨幅最高", a: "致远互联 688369", relation: "对标", dUsPct: 2.46, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "MSFT −1.22%", role: "龙头", a: "金山办公 688111", relation: "对标", dUsPct: 3.46, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "MSFT −1.22%", role: "龙头", a: "用友网络 600588", relation: "同概念", dUsPct: 0.39, dReactPct: null }
+      ],
+      logic: [
+        "隔夜不是普涨。等权前三是能源、半导体、软件SaaS，但广度很差：互联网科技 −1.30%，金融 −0.66%，消费、新能源车、光伏也收绿。资讯把能源写成标普500唯一收涨行业。资金在买油价，而不是抬所有风险资产。",
+        "能源第一名不可外推成「价值主线」。板块第一完全靠三只石油股。A 股中国石油、中国海油 8/31 的涨跌对应更早的美股日，不能当成已经兑现今夜布伦特破 90。9/1 才是对这笔原油的第一根日K。",
+        "半导体反抽修的是周五，不是新主线。NVDA 从 −4.57% 变成 +1.48%，量能回到均量附近。高通领涨，设备股仍跌破 MA10。A 股 8/31 寒武纪、海光对着周五英伟达回吐往上走，映射当天已经反向。"
+      ],
+      caveats: [
+        { title: "能源样本只有 3 只", detail: "等权第一就是油价，不能当成板块轮动或避险风格。" },
+        { title: "A 股反应日尚未开盘", detail: "9/1 日K 不存在。把 8/31 的 A 股涨跌当成对今夜美股的映射，方向会反。" },
+        { title: "8/31 国产算力已经跟周五反向", detail: "寒武纪、海光在美股英伟达 −4.57% 的反应日大涨。种子映射不是传导。" },
+        { title: "互联网「最高」其实是跌得最少", detail: "NFLX −0.82% 只是四只里最不绿的；亚马逊 −2.50% 才是周五轮动的回吐。" },
+        { title: "特斯拉单票不等于新能源车", detail: "TSLA +5.51%，但蔚来、Lucid 收跌，板块等权仍绿。" },
+        { title: "NVDA 同时是 AI 与半导体龙头", detail: "AI算力等权只有 +0.03%，谷歌 −2.09%。" },
+        { title: "BYDDY 无日K", detail: "新能源车等权少一只，板块涨幅可能略有偏差。" }
+      ],
+      watch: [
+        { point: "原油能否守住 90", check: "若布伦特回落，能源第一名就是一日油价脉冲；看 9/1 中国石油、中国海油是否高开低走。" },
+        { point: "英伟达反抽质量", check: "NVDA 量能已回到均量附近；若再跌破 MA10，周五回吐就还没修完。" },
+        { point: "寒武纪 / 海光 / 浪潮的 9/1", check: "8/31 已经大涨的国产算力，面对今夜只是弱反抽的英伟达，是继续还是高开低走。" },
+        { point: "高通与手机链", check: "QCOM +3.83% 之后，卓胜微、汇顶 9/1 是否跟，而不是继续消化 8/31 自己的涨幅。" },
+        { point: "ServiceNow 能否第四天", check: "NOW 连涨三天、幅度在收；微软已收绿。A 股泛微、金山 8/31 已涨，9/1 是跟还是歇。" },
+        { point: "亚马逊回吐是否确认一日游", check: "AMZN 从 +3.97% 变成 −2.50%，重新跌破 MA10。" },
+        { point: "特斯拉是否扩散", check: "TSLA +5.51% 若只是单票，不要把新能源车写成隔夜主线。" },
+        { point: "光伏是否止跌", check: "阳光电源 8/31 再跌 6.34%，美股 FSLR / ENPH 继续回调。" }
+      ],
+      tickersOk: 49,
+      tickersMiss: ["BYDDY"]
+    },
     {
       usDate: "2026-08-28",
       generatedAt: "2026-08-31 06:37",
