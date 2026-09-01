@@ -2,7 +2,7 @@
  * 联网时先拉 GitHub Pages 上的新文件（日榜/简报），失败再用缓存。
  * 主屏幕全屏没有系统下拉刷新，必须靠「刷新」按钮或重新进入页面。
  */
-var CACHE = "ashare-us-screener-v0.1.19";
+var CACHE = "ashare-us-screener-v0.1.20";
 var PRECACHE = [
   "./",
   "./index.html",
