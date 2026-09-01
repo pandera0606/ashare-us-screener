@@ -138,6 +138,20 @@ var MappingData = (function () {
         { ticker: "601688", name: "华泰证券", note: "券商" },
         { ticker: "300059", name: "东方财富", note: "互联网券商" }
       ]
+    },
+    {
+      id: "crypto",
+      nameCn: "加密货币",
+      nameEn: "Crypto",
+      leaderTicker: "COIN",
+      aShares: [
+        { ticker: "300059", name: "东方财富", note: "互联网券商与交易入口，不是加密货币交易所" },
+        { ticker: "300033", name: "同花顺", note: "行情与交易软件" },
+        { ticker: "300468", name: "四方精创", note: "银行区块链系统" },
+        { ticker: "300386", name: "飞天诚信", note: "数字证书与安全芯片" },
+        { ticker: "002177", name: "御银股份", note: "历史上的比特币 ATM / 加密货币概念" },
+        { ticker: "300773", name: "拉卡拉", note: "第三方支付，偏数字人民币基础设施" }
+      ]
     }
   ];
 
@@ -341,6 +355,22 @@ var MappingData = (function () {
     { ticker: "BLK", name: "贝莱德", sectorId: "finance", aShares: [
       { ticker: "300059", name: "东方财富", relation: "同概念", note: "财富管理与流量入口" },
       { ticker: "600030", name: "中信证券", relation: "同概念", note: "机构业务" }
+    ]},
+    { ticker: "COIN", name: "Coinbase", sectorId: "crypto", aShares: [
+      { ticker: "300059", name: "东方财富", relation: "同概念", note: "互联网券商与交易入口；A 股没有合规加密货币交易所对标" },
+      { ticker: "300033", name: "同花顺", relation: "同概念", note: "行情与交易软件" }
+    ]},
+    { ticker: "MSTR", name: "Strategy", sectorId: "crypto", aShares: [
+      { ticker: "300059", name: "东方财富", relation: "同概念", note: "风险资产交易入口，不是公司比特币财库" },
+      { ticker: "002177", name: "御银股份", relation: "同概念", note: "历史上的比特币 ATM / 加密货币概念股" }
+    ]},
+    { ticker: "MARA", name: "Marathon", sectorId: "crypto", aShares: [
+      { ticker: "300468", name: "四方精创", relation: "同概念", note: "区块链系统，不是矿机或矿场" },
+      { ticker: "300386", name: "飞天诚信", relation: "同概念", note: "加密与安全芯片，不是比特币矿企" }
+    ]},
+    { ticker: "IBIT", name: "iShares比特币ETF", sectorId: "crypto", aShares: [
+      { ticker: "300059", name: "东方财富", relation: "同概念", note: "场内交易与财富管理入口；A 股没有比特币现货 ETF 对标" },
+      { ticker: "300773", name: "拉卡拉", relation: "同概念", note: "支付与数字人民币基础设施，不是现货比特币" }
     ]},
     { ticker: "BYDDY", name: "比亚迪ADR", sectorId: "ev", aShares: [
       { ticker: "002594", name: "比亚迪", relation: "ADR", note: "同一公司 A 股" }

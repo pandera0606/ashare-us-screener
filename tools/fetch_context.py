@@ -50,6 +50,7 @@ EXTRA_KW = {
     "energy": ["原油", "石油", "油气"],
     "software": ["软件", "SaaS", "云服务"],
     "finance": ["美联储", "银行股", "华尔街"],
+    "crypto": ["比特币", "加密货币", "Coinbase", "现货ETF", "比特币ETF"],
 }
 
 
@@ -374,7 +375,7 @@ def load_existing_news():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--start", default="2026-08-17")
-    ap.add_argument("--end", default="2026-08-26")
+    ap.add_argument("--end", default="2026-08-31")
     ap.add_argument("--quotes-only", action="store_true",
                     help="只重抓 A 股日K，沿用现有 market-context.js 里的资讯")
     ap.add_argument("--news-only", action="store_true",

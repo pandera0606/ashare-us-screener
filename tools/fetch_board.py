@@ -38,6 +38,7 @@ SUFFIX = {
     "MRNA": ".OQ", "VRTX": ".OQ", "AAPL": ".OQ", "NFLX": ".OQ", "COST": ".OQ",
     "NKE": ".N", "KO": ".N", "PG": ".N", "XOM": ".N", "CVX": ".N", "COP": ".N",
     "JPM": ".N", "GS": ".N", "BLK": ".N",
+    "COIN": ".OQ", "MSTR": ".OQ", "MARA": ".OQ", "IBIT": ".OQ",
 }
 
 SECTOR_RE = re.compile(
@@ -375,7 +376,7 @@ def emit_js(days, meta):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--start", default="2026-08-17")
-    ap.add_argument("--end", default="2026-08-26")
+    ap.add_argument("--end", default="2026-08-31")
     args = ap.parse_args()
 
     sectors, stocks = parse_mapping()

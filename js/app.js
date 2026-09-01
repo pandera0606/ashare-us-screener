@@ -489,10 +489,11 @@
     root.hidden = false;
     var html = '<div class="date-head"><div><h2>' + esc(day.usDate) + " 隔夜简报</h2>" +
       '<p class="muted">生成 ' + esc(day.generatedAt) + " · 保存 " + esc(day.savedAt) +
-      " · 点击板块看映射 A 股，点美股代码看该股对应 A 股</p></div></div>";
+      " · 点击板块看映射 A 股，点美股代码看该股对应 A 股</p></div>" +
+      '<button type="button" class="btn ghost" data-action="open-brief-doc">阅读全文</button></div>';
     html += '<div class="brief-lead"><strong>' + esc(day.headline) + "</strong></div>";
     if (boardDay()) {
-      html += '<p class="muted">下方日榜卡片与原来一样：点板块或代码查看映射。详细推理见 Markdown。</p>';
+      html += '<p class="muted">下方日榜卡片与原来一样：点板块或代码查看映射。板块全表、逻辑链与破绽在「阅读全文」里。</p>';
     } else {
       html += '<div class="sector-grid">';
       (day.top3 || []).forEach(function (sec) {
@@ -536,8 +537,9 @@
       html += "</div>";
     }
     html += '<div class="brief-links">';
+    html += '<button type="button" class="btn ghost" data-action="open-brief-doc">阅读全文</button>';
     if (day.mdPath) {
-      html += '<a href="' + esc(day.mdPath) + '" data-action="go">简报全文（Markdown）</a>';
+      html += '<a href="' + esc(day.mdPath) + '" data-action="go">Markdown 源文件</a>';
     }
     var snap = DailyBriefings.META && DailyBriefings.META.pageSnapshot;
     var onSnapshot = !!document.querySelector(".page-snapshot-banner");
@@ -953,12 +955,210 @@
       "</div></div>";
   }
 
+  function closeOverlay() {
+    var root = $("modal-root");
+    if (root) root.innerHTML = "";
+    document.documentElement.classList.remove("brief-doc-open");
+  }
+
+  function emphasizeFirstSentence(text) {
+    var s = String(text || "");
+    var i = s.indexOf("。");
+    if (i === -1) return esc(s);
+    return "<strong>" + esc(s.slice(0, i + 1)) + "</strong>" + esc(s.slice(i + 1));
+  }
+
+  function pctSpan(v) {
+    if (numVal(v)) return '<span class="muted">—</span>';
+    return '<span class="' + pctClass(v) + '">' + fmtPct(v) + "</span>";
+  }
+
+  function briefDocSection(id, title, inner) {
+    if (!inner) return "";
+    return '<section id="' + id + '"><h2>' + esc(title) + "</h2>" + inner + "</section>";
+  }
+
+  function renderBriefDoc(open) {
+    var root = $("modal-root");
+    if (!root) return;
+    if (!open) {
+      closeOverlay();
+      return;
+    }
+    var day = briefingDay();
+    if (!day) {
+      closeOverlay();
+      showToast("这一天还没有隔夜简报");
+      return;
+    }
+    document.documentElement.classList.add("brief-doc-open");
+    var toc = [
+      ["brief-sec-concl", "结论"],
+      ["brief-sec-sectors", "板块"],
+      ["brief-sec-top3", "前三拆解"],
+      ["brief-sec-mapped", "映射 A 股"],
+      ["brief-sec-logic", "逻辑链"],
+      ["brief-sec-caveats", "破绽"],
+      ["brief-sec-watch", "关注点"]
+    ];
+    var tocHtml = '<nav class="brief-toc">';
+    toc.forEach(function (item) {
+      tocHtml += '<button type="button" data-action="brief-jump" data-id="' + item[0] + '">' +
+        esc(item[1]) + "</button>";
+    });
+    tocHtml += "</nav>";
+
+    var statsHtml = "";
+    if (day.stats && day.stats.length) {
+      statsHtml = '<div class="brief-stats">';
+      day.stats.forEach(function (stat) {
+        var tone = stat.tone === "down" ? "down" : (stat.tone === "up" ? "up" : "");
+        statsHtml += '<div class="brief-stat"><span class="v ' + tone + '">' + esc(stat.value) +
+          '</span><span class="k">' + esc(stat.label) + "</span></div>";
+      });
+      statsHtml += "</div>";
+    }
+
+    var conclInner = '<p class="lead">' + esc(day.summary || day.headline || "") + "</p>" + statsHtml;
+
+    var sectorInner = "";
+    if (day.sectors && day.sectors.length) {
+      var sBody = day.sectors.map(function (sec) {
+        return "<tr>" +
+          td("板块", esc(sec.nameCn)) +
+          td("等权涨跌", pctSpan(sec.changePct), "col-num") +
+          td("龙头", esc(sec.leader)) +
+          td("涨幅最高", esc(sec.topGainer)) +
+          td("备注", esc(sec.note || ""), "col-note") +
+          "</tr>";
+      }).join("");
+      sectorInner = tableWrap(
+        '<table class="table"><thead><tr><th>板块</th><th class="col-num">等权涨跌</th><th>龙头</th><th>涨幅最高</th><th>备注</th></tr></thead><tbody>' +
+        sBody + "</tbody></table>"
+      );
+    }
+
+    var top3Inner = "";
+    (day.top3 || []).forEach(function (sec) {
+      top3Inner += '<div class="top3-block"><h3><span>' + esc(sec.nameCn) + '</span>' +
+        '<span class="' + pctClass(sec.changePct) + '">' + fmtPct(sec.changePct) + "</span></h3>";
+      if (sec.take) top3Inner += "<p>" + esc(sec.take) + "</p>";
+      if (sec.bullets && sec.bullets.length) {
+        top3Inner += "<ul>";
+        sec.bullets.forEach(function (b) {
+          top3Inner += "<li>" + esc(b) + "</li>";
+        });
+        top3Inner += "</ul>";
+      }
+      top3Inner += "</div>";
+    });
+
+    var mappedInner = "";
+    if (day.mappedA && day.mappedA.length) {
+      mappedInner = '<p class="muted">关系类型是种子映射，不是产业结论。A 美股日是隔夜前已走完的 A 股收盘；A 反应日是对隔夜美股的下一 A 股交易日。</p>';
+      var mBody = day.mappedA.map(function (r) {
+        var a = parseAFromBrief(r.a);
+        return "<tr>" +
+          td("板块", esc(r.sectorCn)) +
+          td("美股", esc(r.us)) +
+          td("角色", esc(r.role)) +
+          td("A 股", '<button type="button" class="stock-link" data-action="analyze-from-doc" data-ticker="' +
+            esc(a.ticker) + '">' + esc(a.name) + " " + esc(a.ticker) + "</button>") +
+          td("关系", '<span class="rel">' + esc(r.relation) + "</span>") +
+          td("A 美股日", pctSpan(r.dUsPct), "col-num") +
+          td("A 反应日", pctSpan(r.dReactPct), "col-num") +
+          "</tr>";
+      }).join("");
+      mappedInner += tableWrap(
+        '<table class="table"><thead><tr><th>板块</th><th>美股</th><th>角色</th><th>A 股</th><th>关系</th>' +
+        '<th class="col-num">A 美股日</th><th class="col-num">A 反应日</th></tr></thead><tbody>' +
+        mBody + "</tbody></table>"
+      );
+    }
+
+    var logicInner = "";
+    if (day.logic && day.logic.length) {
+      logicInner = '<ol class="logic">';
+      day.logic.forEach(function (item) {
+        logicInner += "<li>" + emphasizeFirstSentence(item) + "</li>";
+      });
+      logicInner += "</ol>";
+    }
+
+    var caveatsInner = "";
+    if (day.caveats && day.caveats.length) {
+      var cBody = day.caveats.map(function (c) {
+        return "<tr>" + td("破绽", "<strong>" + esc(c.title) + "</strong>") +
+          td("为什么要紧", esc(c.detail)) + "</tr>";
+      }).join("");
+      caveatsInner = tableWrap(
+        '<table class="table"><thead><tr><th>破绽</th><th>为什么要紧</th></tr></thead><tbody>' +
+        cBody + "</tbody></table>"
+      );
+    }
+
+    var watchInner = "";
+    if (day.watch && day.watch.length) {
+      var wBody = day.watch.map(function (w) {
+        return "<tr>" + td("观察点", "<strong>" + esc(w.point) + "</strong>") +
+          td("确认 / 证伪", esc(w.check)) + "</tr>";
+      }).join("");
+      watchInner = tableWrap(
+        '<table class="table"><thead><tr><th>观察点</th><th>确认 / 证伪</th></tr></thead><tbody>' +
+        wBody + "</tbody></table>"
+      );
+    }
+
+    var miss = (day.tickersMiss && day.tickersMiss.length) ? day.tickersMiss.join("、") : "";
+    var seedN = (typeof MappingData !== "undefined" && MappingData.US_STOCKS)
+      ? MappingData.US_STOCKS.length : 0;
+    var endHtml = '<p class="brief-doc-end">' +
+      esc(String(day.tickersOk || 0)) + "/" + seedN + " 只种子美股有日K" +
+      (miss ? "。缺失：" + esc(miss) + "。" : "。") +
+      "映射与涨跌幅只用于研究台账，不构成投资建议。";
+    if (day.mdPath) {
+      endHtml += ' 源文件：<a href="' + esc(day.mdPath) + '" data-action="go">Markdown</a>';
+    }
+    endHtml += "</p>";
+
+    root.innerHTML =
+      '<div class="brief-doc-shell" role="dialog" aria-modal="true" aria-labelledby="brief-doc-title">' +
+        '<div class="brief-doc-bar">' +
+          "<strong>美股 " + esc(day.usDate) + " 收盘简报</strong>" +
+          '<button type="button" class="btn ghost" data-action="close-modal">关闭</button>' +
+        "</div>" +
+        '<div class="brief-doc-scroll">' +
+          '<article class="brief-doc">' +
+            '<p class="kicker">隔夜简报</p>' +
+            '<h1 id="brief-doc-title">' + esc(day.headline) + "</h1>" +
+            '<p class="brief-doc-meta">美股交易日 ' + esc(day.usDate) +
+              " · 生成 " + esc(day.generatedAt) +
+              " · 保存 " + esc(day.savedAt) +
+              (day.source ? " · " + esc(day.source) : "") + "</p>" +
+            (day.disclaimer ? '<p class="disclaimer">' + esc(day.disclaimer) + "</p>" : "") +
+            tocHtml +
+            briefDocSection("brief-sec-concl", "结论", conclInner) +
+            briefDocSection("brief-sec-sectors", "板块等权涨跌幅", sectorInner) +
+            briefDocSection("brief-sec-top3", "前三板块拆解", top3Inner) +
+            briefDocSection("brief-sec-mapped", "映射 A 股", mappedInner) +
+            briefDocSection("brief-sec-logic", "逻辑链", logicInner) +
+            briefDocSection("brief-sec-caveats", "逻辑破绽", caveatsInner) +
+            briefDocSection("brief-sec-watch", "后续关注", watchInner) +
+            endHtml +
+          "</article>" +
+        "</div>" +
+      "</div>";
+    var closeBtn = root.querySelector("[data-action='close-modal']");
+    if (closeBtn) closeBtn.focus();
+  }
+
   function renderModal(open) {
     var root = $("modal-root");
     if (!open) {
-      root.innerHTML = "";
+      closeOverlay();
       return;
     }
+    document.documentElement.classList.remove("brief-doc-open");
     root.innerHTML =
       '<div class="modal-backdrop" data-action="close-modal"><div class="modal" data-action="noop">' +
         "<h2>映射说明</h2>" +
@@ -1252,8 +1452,28 @@
         });
         return;
       }
+      if (action === "open-brief-doc") {
+        renderBriefDoc(true);
+        return;
+      }
+      if (action === "brief-jump") {
+        e.preventDefault();
+        var jump = document.getElementById(t.getAttribute("data-id"));
+        if (jump) jump.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      if (action === "analyze-from-doc") {
+        e.stopPropagation();
+        var fromDoc = MappingData.normalize(t.getAttribute("data-ticker"));
+        closeOverlay();
+        fillAnalysisForm(fromDoc);
+        openAnalysisPanel();
+        $("ticker-input").scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
       if (action === "close-modal") {
-        renderModal(false);
+        closeOverlay();
+        return;
       }
     });
 
@@ -1301,6 +1521,12 @@
 
     $("btn-mapping-help").addEventListener("click", function () {
       renderModal(true);
+    });
+
+    window.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && $("modal-root") && $("modal-root").innerHTML) {
+        closeOverlay();
+      }
     });
 
     window.addEventListener("resize", function () {

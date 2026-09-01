@@ -2,29 +2,30 @@
 var DailyBriefings = (function () {
   var META = {
     timezone: "Asia/Shanghai",
-    savedAt: "2026-09-01 06:37",
+    savedAt: "2026-09-01 12:52",
     latestUsDate: "2026-08-31",
     mdDir: "briefings",
-    pageSnapshot: "archive/2026-09-01_0637.html"
+    pageSnapshot: "archive/2026-09-01_1252.html"
   };
 
   var DAYS = [
     {
       usDate: "2026-08-31",
       generatedAt: "2026-09-01 06:36",
-      savedAt: "2026-09-01 06:36",
+      savedAt: "2026-09-01 12:52",
       source: "腾讯财经日K · 种子美股等权",
       mdPath: "briefings/2026-08-31.md",
-      headline: "隔夜主线是原油能源，科技从周五的轮动里退出来",
-      summary: "十板块四个收红，两个几乎持平。能源等权 +2.16%，资讯写能源是标普500唯一收涨行业、布伦特突破90美元。半导体第二 +0.55%，是周五 −3.56% 之后的弱反抽。软件只剩 +0.19%，微软 −1.22%。互联网最弱 −1.30%，亚马逊回吐周五。A 股 9/1 反应日尚未开盘，不编造涨跌。",
-      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。",
+      headline: "隔夜主线是加密货币，原油只是第二，科技从周五轮动里退出来",
+      summary: "补上加密货币种子后，十一板块等权第一是加密 +3.10%（COIN +5.31%、MSTR +4.42%），不是原油。能源第二 +2.16%。半导体第三 +0.55%，周五弱反抽。软件掉出前三。A 股 9/1 已收盘：飞天诚信 / 四方精创大涨但是同概念；中国石油平盘，没有兑现布伦特破 90。",
+      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。A 股没有比特币现货或合规交易所对标。",
       stats: [
-        { label: "能源（等权第一）", value: "+2.16%", tone: "up" },
-        { label: "半导体（第二）", value: "+0.55%", tone: "up" },
-        { label: "软件SaaS（第三）", value: "+0.19%", tone: "up" },
+        { label: "加密货币（等权第一）", value: "+3.10%", tone: "up" },
+        { label: "能源（第二）", value: "+2.16%", tone: "up" },
+        { label: "半导体（第三）", value: "+0.55%", tone: "up" },
         { label: "互联网科技（最弱）", value: "−1.30%", tone: "down" }
       ],
       sectors: [
+        { nameCn: "加密货币", changePct: 3.10, leader: "COIN +5.31%", topGainer: "COIN +5.31%", note: "4 只样本，龙头即最高" },
         { nameCn: "能源", changePct: 2.16, leader: "XOM +2.71%", topGainer: "XOM +2.71%", note: "3 只样本，龙头即最高" },
         { nameCn: "半导体", changePct: 0.55, leader: "NVDA +1.48%", topGainer: "QCOM +3.83%", note: "13 只样本，设备股仍绿" },
         { nameCn: "软件SaaS", changePct: 0.19, leader: "MSFT −1.22%", topGainer: "NOW +2.27%", note: "5 只样本，龙头收绿" },
@@ -38,13 +39,23 @@ var DailyBriefings = (function () {
       ],
       top3: [
         {
+          nameCn: "加密货币",
+          changePct: 3.10,
+          take: "8 月收官的风险偏好在比特币链上。四只全红，龙头即最高，趋势标上升。",
+          bullets: [
+            "龙头即最高 COIN Coinbase +5.31%，量能 1.12×，站上 MA20、上升",
+            "MSTR Strategy +4.42%。资讯：Strategy 时隔两月重启买币，上周购入约 3.7 亿美元 BTC",
+            "IBIT +1.75%；MARA +0.94%。等权第一是交易平台 + 比特币财库，不是矿企单票"
+          ]
+        },
+        {
           nameCn: "能源",
           changePct: 2.16,
-          take: "8 月收官只有能源在涨。三只石油股全红，龙头即最高，趋势仍标震荡。",
+          take: "三只石油股全红，龙头即最高，趋势仍标震荡。资讯写能源是标普500唯一收涨行业，那是 GICS 口径。",
           bullets: [
             "龙头即最高 XOM 埃克森美孚 +2.71%，量能 1.29×，站上 MA5、震荡",
-            "CVX +2.12%，量能 1.51×；COP +1.64%。资讯：能源是标普500唯一收涨行业，布伦特破 90",
-            "样本只有 3 只，等权第一就是油价，不是风格切换"
+            "CVX +2.12%，量能 1.51×；COP +1.64%。布伦特破 90",
+            "样本只有 3 只，等权第二就是油价，不是风格切换"
           ]
         },
         {
@@ -56,38 +67,32 @@ var DailyBriefings = (function () {
             "最高 QCOM 高通 +3.83%，量能 1.32×，MA5 上穿 MA20、震荡",
             "MU +2.77%；设备股 AMAT / LRCX / KLAC 小跌，迈威尔 −2.29%。13 只里大约一半红"
           ]
-        },
-        {
-          nameCn: "软件SaaS",
-          changePct: 0.19,
-          take: "ServiceNow 连涨，微软把板块等权从跟涨打回几乎持平。",
-          bullets: [
-            "龙头 MSFT 微软 −1.22%，量能 1.03×，MA5 上穿 MA20、震荡",
-            "最高 NOW ServiceNow +2.27%，量能 1.42×，站上 MA20、上升",
-            "CRM +0.60%；ADBE +0.44%；ORCL −1.15%。五只里三只收红，龙头最弱"
-          ]
         }
       ],
       mappedA: [
-        { sectorCn: "能源", us: "XOM +2.71%", role: "龙头", a: "中国石油 601857", relation: "对标", dUsPct: 1.69, dReactPct: null },
-        { sectorCn: "能源", us: "XOM +2.71%", role: "龙头", a: "中国海油 600938", relation: "对标", dUsPct: 1.52, dReactPct: null },
-        { sectorCn: "半导体", us: "QCOM +3.83%", role: "涨幅最高", a: "卓胜微 300782", relation: "供应链", dUsPct: 2.05, dReactPct: null },
-        { sectorCn: "半导体", us: "QCOM +3.83%", role: "涨幅最高", a: "汇顶科技 603160", relation: "同概念", dUsPct: 5.97, dReactPct: null },
-        { sectorCn: "半导体", us: "NVDA +1.48%", role: "龙头", a: "寒武纪 688256", relation: "对标", dUsPct: 6.26, dReactPct: null },
-        { sectorCn: "半导体", us: "NVDA +1.48%", role: "龙头", a: "海光信息 688041", relation: "对标", dUsPct: 3.43, dReactPct: null },
-        { sectorCn: "软件SaaS", us: "NOW +2.27%", role: "涨幅最高", a: "泛微网络 603039", relation: "对标", dUsPct: 3.91, dReactPct: null },
-        { sectorCn: "软件SaaS", us: "NOW +2.27%", role: "涨幅最高", a: "致远互联 688369", relation: "对标", dUsPct: 2.46, dReactPct: null },
-        { sectorCn: "软件SaaS", us: "MSFT −1.22%", role: "龙头", a: "金山办公 688111", relation: "对标", dUsPct: 3.46, dReactPct: null },
-        { sectorCn: "软件SaaS", us: "MSFT −1.22%", role: "龙头", a: "用友网络 600588", relation: "同概念", dUsPct: 0.39, dReactPct: null }
+        { sectorCn: "加密货币", us: "COIN +5.31%", role: "龙头", a: "东方财富 300059", relation: "同概念", dUsPct: -0.15, dReactPct: 0.72 },
+        { sectorCn: "加密货币", us: "COIN +5.31%", role: "龙头", a: "同花顺 300033", relation: "同概念", dUsPct: -0.56, dReactPct: -0.08 },
+        { sectorCn: "加密货币", us: "MSTR +4.42%", role: "样本", a: "御银股份 002177", relation: "同概念", dUsPct: -1.66, dReactPct: 4.04 },
+        { sectorCn: "加密货币", us: "MARA +0.94%", role: "样本", a: "四方精创 300468", relation: "同概念", dUsPct: -2.5, dReactPct: 7.01 },
+        { sectorCn: "加密货币", us: "MARA +0.94%", role: "样本", a: "飞天诚信 300386", relation: "同概念", dUsPct: -2.7, dReactPct: 8.85 },
+        { sectorCn: "能源", us: "XOM +2.71%", role: "龙头", a: "中国石油 601857", relation: "对标", dUsPct: 1.69, dReactPct: 0 },
+        { sectorCn: "能源", us: "XOM +2.71%", role: "龙头", a: "中国海油 600938", relation: "对标", dUsPct: 1.52, dReactPct: 0.29 },
+        { sectorCn: "半导体", us: "QCOM +3.83%", role: "涨幅最高", a: "卓胜微 300782", relation: "供应链", dUsPct: 2.05, dReactPct: -3.75 },
+        { sectorCn: "半导体", us: "QCOM +3.83%", role: "涨幅最高", a: "汇顶科技 603160", relation: "同概念", dUsPct: 5.97, dReactPct: -0.52 },
+        { sectorCn: "半导体", us: "NVDA +1.48%", role: "龙头", a: "寒武纪 688256", relation: "对标", dUsPct: 6.26, dReactPct: 0.82 },
+        { sectorCn: "半导体", us: "NVDA +1.48%", role: "龙头", a: "海光信息 688041", relation: "对标", dUsPct: 3.43, dReactPct: -1.32 }
       ],
       logic: [
-        "隔夜不是普涨。等权前三是能源、半导体、软件SaaS，但广度很差：互联网科技 −1.30%，金融 −0.66%，消费、新能源车、光伏也收绿。资讯把能源写成标普500唯一收涨行业。资金在买油价，而不是抬所有风险资产。",
-        "能源第一名不可外推成「价值主线」。板块第一完全靠三只石油股。A 股中国石油、中国海油 8/31 的涨跌对应更早的美股日，不能当成已经兑现今夜布伦特破 90。9/1 才是对这笔原油的第一根日K。",
-        "半导体反抽修的是周五，不是新主线。NVDA 从 −4.57% 变成 +1.48%，量能回到均量附近。高通领涨，设备股仍跌破 MA10。A 股 8/31 寒武纪、海光对着周五英伟达回吐往上走，映射当天已经反向。"
+        "种子表漏加密货币时，隔夜主线会被写成原油。补上 COIN / MSTR / MARA / IBIT 之后，等权第一是 +3.10%，压过能源 +2.16%。标普「唯一收涨行业」是 GICS 口径，不含比特币现货和 Coinbase。",
+        "加密货币第一名传不到 A 股交易所对标。东方财富 9/1 只 +0.72%，同花顺平盘。真正大涨的是飞天诚信 +8.85%、四方精创 +7.01%——全是同概念，不是 Coinbase。",
+        "能源第二名也没有在 9/1 兑现。中国石油平盘、中国海油 +0.29%。8/31 白天那一列对应更早的美股日。布伦特破 90 的隔夜脉冲，A 股石油股当天没接。",
+        "半导体反抽修的是周五，9/1 还往回吐。NVDA +1.48% 量能回到均量附近。卓胜微 9/1 −3.75%，海光 −1.32%。8/31 国产算力大涨是对着周五英伟达回吐，映射当天已经反向。"
       ],
       caveats: [
-        { title: "能源样本只有 3 只", detail: "等权第一就是油价，不能当成板块轮动或避险风格。" },
-        { title: "A 股反应日尚未开盘", detail: "9/1 日K 不存在。把 8/31 的 A 股涨跌当成对今夜美股的映射，方向会反。" },
+        { title: "加密货币没有 A 股对标", detail: "映射全是同概念。把飞天诚信、四方精创的 9/1 大涨写成跟上 Coinbase，是概念股，不是交易所或矿企。" },
+        { title: "加密货币样本只有 4 只", detail: "等权第一主要靠 COIN / MSTR；MARA 只 +0.94%。不是全产业链普涨。" },
+        { title: "能源样本只有 3 只", detail: "等权第二就是油价，不能当成板块轮动或避险风格。" },
+        { title: "标普行业口径 ≠ 种子板块", detail: "资讯写能源是唯一收涨行业，是因为比特币相关不在 GICS 能源里。" },
         { title: "8/31 国产算力已经跟周五反向", detail: "寒武纪、海光在美股英伟达 −4.57% 的反应日大涨。种子映射不是传导。" },
         { title: "互联网「最高」其实是跌得最少", detail: "NFLX −0.82% 只是四只里最不绿的；亚马逊 −2.50% 才是周五轮动的回吐。" },
         { title: "特斯拉单票不等于新能源车", detail: "TSLA +5.51%，但蔚来、Lucid 收跌，板块等权仍绿。" },
@@ -95,16 +100,16 @@ var DailyBriefings = (function () {
         { title: "BYDDY 无日K", detail: "新能源车等权少一只，板块涨幅可能略有偏差。" }
       ],
       watch: [
-        { point: "原油能否守住 90", check: "若布伦特回落，能源第一名就是一日油价脉冲；看 9/1 中国石油、中国海油是否高开低走。" },
+        { point: "Strategy / Coinbase 能否续", check: "若买币新闻是一日脉冲，加密货币第一名就不会隔夜再排第一。看 COIN 是否守住 MA20。" },
+        { point: "A 股加密概念是否一日游", check: "飞天诚信、四方精创 9/1 大涨后，若隔日高开低走，说明只是同概念炒作。" },
+        { point: "原油能否守住 90", check: "若布伦特回落，能源第二名就是一日油价脉冲；中国石油 9/1 已经没跟。" },
         { point: "英伟达反抽质量", check: "NVDA 量能已回到均量附近；若再跌破 MA10，周五回吐就还没修完。" },
-        { point: "寒武纪 / 海光 / 浪潮的 9/1", check: "8/31 已经大涨的国产算力，面对今夜只是弱反抽的英伟达，是继续还是高开低走。" },
-        { point: "高通与手机链", check: "QCOM +3.83% 之后，卓胜微、汇顶 9/1 是否跟，而不是继续消化 8/31 自己的涨幅。" },
-        { point: "ServiceNow 能否第四天", check: "NOW 连涨三天、幅度在收；微软已收绿。A 股泛微、金山 8/31 已涨，9/1 是跟还是歇。" },
+        { point: "寒武纪 / 海光 / 卓胜微", check: "9/1 已经走弱或回吐。后面若美股半导体再红，不要默认国产算力跟。" },
         { point: "亚马逊回吐是否确认一日游", check: "AMZN 从 +3.97% 变成 −2.50%，重新跌破 MA10。" },
         { point: "特斯拉是否扩散", check: "TSLA +5.51% 若只是单票，不要把新能源车写成隔夜主线。" },
         { point: "光伏是否止跌", check: "阳光电源 8/31 再跌 6.34%，美股 FSLR / ENPH 继续回调。" }
       ],
-      tickersOk: 49,
+      tickersOk: 53,
       tickersMiss: ["BYDDY"]
     },
     {
