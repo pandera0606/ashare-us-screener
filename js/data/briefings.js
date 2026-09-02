@@ -289,18 +289,55 @@ var DailyBriefings = (function () {
       usDate: "2026-08-27",
       generatedAt: "2026-08-28 07:25",
       savedAt: "2026-08-28 07:25",
-      source: "腾讯财经日K · 种子美股等权",
+      source: "腾讯财经日K · GICS板块 / 概念等权",
       mdPath: "briefings/2026-08-27.md",
       headline: "隔夜主线是软件财报与英伟达，不是全面风险偏好",
-      summary: "十板块五个收红。软件SaaS 等权 +8.43%，几乎被 Salesforce 单日 +22.58% 抬起来，龙头微软只涨 1.75%。AI算力第二完全靠英伟达财报后 +8.74% 放量。A 股 8/28 反应日尚未开盘，不编造涨跌。",
-      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。",
+      summary: "GICS 板块第一是加密货币 +6.03%（Strategy +11.54%），信息技术第二 +3.22% 被 Salesforce 单票抬高。概念维度仍是软件SaaS +8.43%、加密货币 +6.03%、AI算力 +3.08%。当时写的光伏第三是主题口径。A 股 8/28 反应日尚未开盘，不编造涨跌。",
+      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。概念表沿用当时主题口径；GICS 表按 v0.1.21 重算。",
       stats: [
-        { label: "软件SaaS（等权第一）", value: "+8.43%", tone: "up" },
-        { label: "AI算力（第二）", value: "+3.08%", tone: "up" },
-        { label: "光伏储能（第三）", value: "+1.83%", tone: "up" },
-        { label: "创新药（最弱）", value: "−1.91%", tone: "down" }
+        { label: "加密货币（GICS 第一）", value: "+6.03%", tone: "up" },
+        { label: "软件SaaS（概念第一）", value: "+8.43%", tone: "up" },
+        { label: "信息技术（GICS 第二）", value: "+3.22%", tone: "up" },
+        { label: "创新药（概念最弱）", value: "−1.91%", tone: "down" }
       ],
       sectors: [
+        { nameCn: "加密货币", changePct: 6.03, leader: "COIN +4.92%", topGainer: "MSTR +11.54%", note: "非 GICS 增补，Strategy 单票权重大" },
+        { nameCn: "信息技术", changePct: 3.22, leader: "NVDA +8.74%", topGainer: "CRM +22.58%", note: "GICS 把软件财报和英伟达并进同一级" },
+        { nameCn: "工业", changePct: -0.07, leader: "CAT −0.60%", topGainer: "ENPH +2.16%", note: "工程机械与光伏设备对冲后近乎持平" }
+      ],
+      top3: [
+        {
+          nameCn: "加密货币",
+          changePct: 6.03,
+          take: "当时主题日榜没有这一级。按 GICS+增补重算，8/27 真正的板块第一是比特币链，不是软件。",
+          bullets: [
+            "龙头 COIN Coinbase +4.92%",
+            "最高 MSTR Strategy +11.54%",
+            "概念「软件SaaS」+8.43% 更高，但那是主题标签，不是 GICS 板块"
+          ]
+        },
+        {
+          nameCn: "信息技术",
+          changePct: 3.22,
+          take: "GICS 把 Salesforce 财报和英伟达并进信息技术。等权被 22% 单票劫持，不能读成科技普涨。",
+          bullets: [
+            "龙头 NVDA 英伟达 +8.74%，量能 2.39×，站上 MA10",
+            "最高 CRM Salesforce +22.58%",
+            "概念里软件单独 +8.43%、AI算力 +3.08%，拆开看才知道是两笔财报"
+          ]
+        },
+        {
+          nameCn: "工业",
+          changePct: -0.07,
+          take: "新补的工业样本几乎走平。光伏设备在工业里，不再单独把板块抬到第三。",
+          bullets: [
+            "龙头 CAT 卡特彼勒 −0.60%",
+            "最高 ENPH Enphase +2.16%",
+            "概念「光伏储能」当天仍红，但 GICS 工业把工程机械和太阳能设备对冲掉了"
+          ]
+        }
+      ],
+      concepts: [
         { nameCn: "软件SaaS", changePct: 8.43, leader: "MSFT +1.75%", topGainer: "CRM +22.58%", note: "5 只样本，CRM 单票权重大" },
         { nameCn: "AI算力", changePct: 3.08, leader: "NVDA +8.74%", topGainer: "NVDA +8.74%", note: "龙头即最高" },
         { nameCn: "光伏储能", changePct: 1.83, leader: "FSLR +2.02%", topGainer: "ENPH +2.16%", note: "3 只样本，趋势仍回调" },
@@ -312,7 +349,7 @@ var DailyBriefings = (function () {
         { nameCn: "消费", changePct: -1.26, leader: "COST −2.24%", topGainer: "NKE −0.39%", note: "防守品种齐跌" },
         { nameCn: "创新药", changePct: -1.91, leader: "LLY −1.12%", topGainer: "VRTX +0.05%", note: "礼来、诺和诺德、Moderna 齐跌" }
       ],
-      top3: [
+      conceptTop3: [
         {
           nameCn: "软件SaaS",
           changePct: 8.43,
@@ -359,6 +396,7 @@ var DailyBriefings = (function () {
         { sectorCn: "光伏储能", us: "FSLR +2.02%", role: "龙头", a: "通威股份 600438", relation: "对标", dUsPct: -0.92, dReactPct: null }
       ],
       logic: [
+        "GICS 信息技术把 Salesforce 和英伟达并进同一级（+3.22%）。概念里软件单独 +8.43%、AI 单独 +3.08%；加密货币作为增补板块才是 GICS 第一（+6.03%），当时主题日榜看不见。",
         "隔夜不是普涨。等权前三是软件SaaS、AI算力、光伏储能，但广度一般：创新药 −1.91%，消费 −1.26%，互联网科技和能源也收绿。资金在买财报，而不是抬所有风险资产。",
         "软件第一名不可外推成「SaaS 主线」。板块第一主要靠 CRM +22.58%（量能 3.95×）和 NOW +10.04%。龙头微软只涨 1.75%。把单票财报映射成 A 股软件板块趋势，需要 8/28 用友、金山自己确认。",
         "英伟达扭转了 8/26 的放量回调。NVDA 从 −1.59% 变成 +8.74%、量能 2.39×、重新站上 MA10。ANET 昨天领涨今天收绿。A 股 8/27 海光、工业富联大涨是对更早交易日的反应，不能当成已经兑现今夜英伟达。"
@@ -385,18 +423,55 @@ var DailyBriefings = (function () {
       usDate: "2026-08-26",
       generatedAt: "2026-08-27 15:06",
       savedAt: "2026-08-27 15:25",
-      source: "腾讯财经日K · 种子美股等权",
+      source: "腾讯财经日K · GICS板块 / 概念等权",
       mdPath: "briefings/2026-08-26.md",
       headline: "隔夜主线是「局部反弹」，不是全面风险偏好",
-      summary: "十板块里只有五个收红，第一名光伏被 SolarEdge 单日 +10.71% 抬起来，龙头第一太阳能反而收跌。真正传到 A 股的是光模块 / 国产算力，不是光伏逆变器。",
-      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。",
+      summary: "GICS 板块第一是工业 +2.37%，主要靠 SolarEdge 把电气设备抬上去；信息技术第二 +0.79%。概念维度仍是光伏储能 +4.38%、半导体 / AI算力各 +0.58%。真正传到 A 股的是光模块 / 国产算力，不是光伏逆变器。",
+      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。概念表沿用当时主题口径；GICS 表按 v0.1.21 重算。",
       stats: [
-        { label: "光伏储能（等权第一）", value: "+4.38%", tone: "up" },
-        { label: "人工智能（第二）", value: "+0.88%", tone: "up" },
-        { label: "半导体（第三）", value: "+0.58%", tone: "up" },
-        { label: "创新药（最弱）", value: "−3.35%", tone: "down" }
+        { label: "工业（GICS 第一）", value: "+2.37%", tone: "up" },
+        { label: "光伏储能（概念第一）", value: "+4.38%", tone: "up" },
+        { label: "信息技术（GICS 第二）", value: "+0.79%", tone: "up" },
+        { label: "创新药（概念最弱）", value: "−3.35%", tone: "down" }
       ],
       sectors: [
+        { nameCn: "工业", changePct: 2.37, leader: "CAT +1.31%", topGainer: "SEDG +10.71%", note: "GICS，光伏设备并进工业" },
+        { nameCn: "信息技术", changePct: 0.79, leader: "NVDA −1.59%", topGainer: "ANET +5.92%", note: "英伟达收绿，网络设备领涨" },
+        { nameCn: "公用事业", changePct: 0.01, leader: "NEE +0.00%", topGainer: "DUK +0.25%", note: "新补样本，近乎走平" }
+      ],
+      top3: [
+        {
+          nameCn: "工业",
+          changePct: 2.37,
+          take: "GICS 工业第一名不是工程机械主线，是 SolarEdge 超跌反弹把电气设备抬上去。",
+          bullets: [
+            "龙头 CAT 卡特彼勒 +1.31%",
+            "最高 SEDG SolarEdge +10.71%，量能 1.66×，仍跌破 MA20",
+            "概念「光伏储能」单独看是 +4.38%；并进工业后样本被稀释，但仍排 GICS 第一"
+          ]
+        },
+        {
+          nameCn: "信息技术",
+          changePct: 0.79,
+          take: "网络设备强于算力整机。ANET 领涨，英伟达放量回调。",
+          bullets: [
+            "龙头 NVDA 英伟达 −1.59%，量能 1.54×，跌破 MA10",
+            "最高 ANET Arista +5.92%",
+            "概念把半导体和 AI 拆开后各约 +0.58%，合并进信息技术几乎看不出结构"
+          ]
+        },
+        {
+          nameCn: "公用事业",
+          changePct: 0.01,
+          take: "新补的电力股近乎走平，只是填上 GICS 缺口，不是隔夜主线。",
+          bullets: [
+            "龙头 NEE 新纪元能源平盘",
+            "最高 DUK 杜克能源 +0.25%",
+            "不要把第三名读成公用事业启动"
+          ]
+        }
+      ],
+      concepts: [
         { nameCn: "光伏储能", changePct: 4.38, leader: "FSLR −0.43%", topGainer: "SEDG +10.71%", note: "3 只样本，单票权重大" },
         { nameCn: "人工智能", changePct: 0.88, leader: "MSFT +0.95%", topGainer: "ANET +5.92%", note: "网络设备强于算力整机" },
         { nameCn: "半导体", changePct: 0.58, leader: "NVDA −1.59%", topGainer: "ARM +3.93%", note: "英伟达放量回调" },
@@ -408,7 +483,7 @@ var DailyBriefings = (function () {
         { nameCn: "新能源车", changePct: -1.64, leader: "TSLA −1.26%", topGainer: "XPEV +0.95%", note: "BYDDY 无日K" },
         { nameCn: "创新药", changePct: -3.35, leader: "LLY −3.59%", topGainer: "VRTX −1.01%", note: "礼来、诺和诺德、Moderna 齐跌" }
       ],
-      top3: [
+      conceptTop3: [
         {
           nameCn: "光伏储能",
           changePct: 4.38,
