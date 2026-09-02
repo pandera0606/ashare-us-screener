@@ -18,6 +18,7 @@
       searchStocks: function () { return []; },
       isKnown: function () { return false; },
       sectorById: function () { return null; },
+      conceptById: function () { return null; },
       usByTicker: function () { return null; }
     };
   }
@@ -56,9 +57,11 @@
     viewMonth: 7,
     selectedDate: latestDataDate() || "2026-08-26",
     selectedSectorId: null,
+    selectedConceptId: null,
     selectedUsTicker: null,
     selectedBriefSector: null,
     drillMode: null,
+    boardDim: "sector",
     focusTicker: null,
     draftShots: [],
     searchQuery: "",
@@ -493,7 +496,7 @@
       '<button type="button" class="btn ghost" data-action="open-brief-doc">阅读全文</button></div>';
     html += '<div class="brief-lead"><strong>' + esc(day.headline) + "</strong></div>";
     if (boardDay()) {
-      html += '<p class="muted">下方日榜卡片与原来一样：点板块或代码查看映射。板块全表、逻辑链与破绽在「阅读全文」里。</p>';
+      html += '<p class="muted">下方日榜可用「板块 / 概念」切换。板块全表、概念表、逻辑链与破绽在「阅读全文」里。</p>';
     } else {
       html += '<div class="sector-grid">';
       (day.top3 || []).forEach(function (sec) {
@@ -537,7 +540,6 @@
       html += "</div>";
     }
     html += '<div class="brief-links">';
-    html += '<button type="button" class="btn ghost" data-action="open-brief-doc">阅读全文</button>';
     if (day.mdPath) {
       html += '<a href="' + esc(day.mdPath) + '" data-action="go">Markdown 源文件</a>';
     }
@@ -548,6 +550,21 @@
     }
     html += "</div>";
     root.innerHTML = html;
+  }
+
+  function dimToggleHtml() {
+    var sectorOn = state.boardDim !== "concept";
+    return '<div class="dim-toggle" role="tablist" aria-label="日榜维度">' +
+      '<button type="button" class="' + (sectorOn ? "active" : "") + '" data-action="set-board-dim" data-dim="sector">板块</button>' +
+      '<button type="button" class="' + (sectorOn ? "" : "active") + '" data-action="set-board-dim" data-dim="concept">概念</button>' +
+      "</div>";
+  }
+
+  function boardCards(day) {
+    if (state.boardDim === "concept" && day.concepts && day.concepts.length) {
+      return { items: day.concepts, kind: "concept", empty: "当日暂无概念日榜。" };
+    }
+    return { items: day.sectors || [], kind: "sector", empty: "当日暂无美股板块日榜。" };
   }
 
   function renderBoard() {
@@ -567,7 +584,8 @@
     }
     root.hidden = false;
     var html = '<div class="date-head"><div><h2>' + state.selectedDate + " 美股收盘</h2>" +
-      '<p class="muted">' + beijingHint(state.selectedDate) + "</p></div></div>";
+      '<p class="muted">' + beijingHint(state.selectedDate) + "</p></div>" +
+      dimToggleHtml() + "</div>";
     if (SampleBoard.META) {
       html += '<p class="muted">' + esc(SampleBoard.META.provider) +
         " · " + esc(SampleBoard.META.start) + " 至 " + esc(SampleBoard.META.end) +
@@ -579,13 +597,23 @@
         " · 抓取于 " + esc(MarketContext.META.fetchedAt) + "</p>";
     }
     if (day.note) html += '<p class="muted">' + esc(day.note) + "</p>";
+    var pack = boardCards(day);
+    var items = pack.items;
+    var kind = pack.kind;
+    var pickAction = kind === "concept" ? "pick-concept" : "pick-sector";
+    var newsChip = kind === "concept" ? "概念" : "板块";
     html += '<div class="sector-grid">';
-    day.sectors.forEach(function (sec) {
-      var active = state.selectedSectorId === sec.id && state.drillMode === "sector" ? " active" : "";
+    if (!items.length) {
+      html += '<p class="empty">' + pack.empty + "</p>";
+    }
+    items.forEach(function (sec) {
+      var active = kind === "concept"
+        ? (state.selectedConceptId === sec.id && state.drillMode === "concept" ? " active" : "")
+        : (state.selectedSectorId === sec.id && state.drillMode === "sector" ? " active" : "");
       var gainerLabel = sec.leader && sec.topGainer && sec.leader.ticker === sec.topGainer.ticker
         ? "涨幅最高（同龙头）"
         : "涨幅最高";
-      html += '<div class="sector-card' + active + '" data-action="pick-sector" data-id="' + esc(sec.id) + '" role="button" tabindex="0">' +
+      html += '<div class="sector-card' + active + '" data-action="' + pickAction + '" data-id="' + esc(sec.id) + '" role="button" tabindex="0">' +
         '<div class="name"><strong>' + esc(sec.nameCn) + '</strong><span class="pct ' + pctClass(sec.changePct) + '">' + fmtPct(sec.changePct) + "</span></div>" +
         '<div class="en">' + esc(sec.nameEn) + "</div>" +
         stockBlock("龙头", sec.leader, "leader") +
@@ -620,7 +648,7 @@
               renderNewsList(gNews) + "</div>";
           }
           if (sNews.length) {
-            html += '<div class="news-group"><div class="news-group-label"><span class="role-chip sector">板块</span>当日消息</div>' +
+            html += '<div class="news-group"><div class="news-group-label"><span class="role-chip sector">' + newsChip + "</span>当日消息</div>" +
               renderNewsList(sNews) + "</div>";
           }
         }
@@ -691,10 +719,16 @@
       );
       return;
     }
-    if (state.drillMode === "sector" && state.selectedSectorId) {
-      var sec = MappingData.sectorById(state.selectedSectorId);
+    if ((state.drillMode === "sector" && state.selectedSectorId) ||
+        (state.drillMode === "concept" && state.selectedConceptId)) {
+      var isConcept = state.drillMode === "concept";
+      var groupId = isConcept ? state.selectedConceptId : state.selectedSectorId;
+      var sec = isConcept
+        ? (MappingData.conceptById ? MappingData.conceptById(groupId) : null)
+        : MappingData.sectorById(groupId);
+      var kindLabel = isConcept ? "概念" : "板块";
       if (!sec) {
-        root.innerHTML = '<p class="empty">未找到该板块映射。</p>';
+        root.innerHTML = '<p class="empty">未找到该' + kindLabel + "映射。</p>";
         return;
       }
       var rows = sortMapped(sec.aShares.map(function (a) {
@@ -731,8 +765,9 @@
         }
         weekNews = '<div class="mapped-news"><div class="mapped-news-title">关联 A 股 · 近一周资讯</div>' + weekNews + "</div>";
       }
-      root.innerHTML = '<div class="panel-head"><h2>板块映射 A 股 · ' + esc(sec.nameCn) + "</h2>" +
-        '<p class="muted">行业/概念级候选。前收为该美股日对应的最近 A 股收盘；当日涨幅为下一 A 股交易日；前日/5日/10日为相对前收的涨跌。点击行情字段名排序。</p></div>' +
+      root.innerHTML = '<div class="panel-head"><h2>' + kindLabel + "映射 A 股 · " + esc(sec.nameCn) + "</h2>" +
+        '<p class="muted">' + (isConcept ? "原主题板块现为概念标签。" : "GICS 一级行业或增补板块。") +
+        "前收为该美股日对应的最近 A 股收盘；当日涨幅为下一 A 股交易日；前日/5日/10日为相对前收的涨跌。点击行情字段名排序。</p></div>" +
         tableWrap('<table class="table quote-table"><thead><tr><th>代码</th><th>名称</th><th>关系</th>' + quoteHead() + '<th>说明</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>") +
         (weekNews || '<p class="empty">近一周暂无匹配资讯。</p>');
       return;
@@ -743,7 +778,7 @@
       var mapped = MappingData.getMappedFromUs(state.selectedUsTicker);
       if (!mapped.length) {
         root.innerHTML = '<div class="panel-head"><h2>个股映射 A 股 · ' + esc(state.selectedUsTicker) + " " + esc(name) + "</h2></div>" +
-          '<p class="empty">种子映射中暂无对应 A 股。可在个股分析中手动记录，或后续补充 mapping.js。</p>';
+          '<p class="empty">种子映射中暂无对应 A 股。可在个股分析中手动记录，或打开映射配置页补充。</p>';
         return;
       }
       var body = sortMapped(mapped.map(function (a) {
@@ -783,7 +818,7 @@
         (weekNews || '<p class="empty">近一周暂无匹配资讯。</p>');
       return;
     }
-    root.innerHTML = '<div class="panel-head"><h2>映射明细</h2><p class="muted">点击上方板块查看该板块 A 股；点击美股代码查看业务对应 A 股。</p></div>' +
+    root.innerHTML = '<div class="panel-head"><h2>映射明细</h2><p class="muted">点击上方板块或概念查看对应 A 股；点击美股代码查看业务对应 A 股。</p></div>' +
       '<p class="empty">尚未选择板块或美股个股。</p>';
   }
 
@@ -995,7 +1030,9 @@
     var toc = [
       ["brief-sec-concl", "结论"],
       ["brief-sec-sectors", "板块"],
-      ["brief-sec-top3", "前三拆解"],
+      ["brief-sec-top3", "板块前三"],
+      ["brief-sec-concepts", "概念"],
+      ["brief-sec-concept-top3", "概念前三"],
       ["brief-sec-mapped", "映射 A 股"],
       ["brief-sec-logic", "逻辑链"],
       ["brief-sec-caveats", "破绽"],
@@ -1021,37 +1058,45 @@
 
     var conclInner = '<p class="lead">' + esc(day.summary || day.headline || "") + "</p>" + statsHtml;
 
-    var sectorInner = "";
-    if (day.sectors && day.sectors.length) {
-      var sBody = day.sectors.map(function (sec) {
+    function rankTable(rows, colLabel) {
+      if (!rows || !rows.length) return "";
+      var sBody = rows.map(function (sec) {
         return "<tr>" +
-          td("板块", esc(sec.nameCn)) +
+          td(colLabel, esc(sec.nameCn)) +
           td("等权涨跌", pctSpan(sec.changePct), "col-num") +
           td("龙头", esc(sec.leader)) +
           td("涨幅最高", esc(sec.topGainer)) +
           td("备注", esc(sec.note || ""), "col-note") +
           "</tr>";
       }).join("");
-      sectorInner = tableWrap(
-        '<table class="table"><thead><tr><th>板块</th><th class="col-num">等权涨跌</th><th>龙头</th><th>涨幅最高</th><th>备注</th></tr></thead><tbody>' +
+      return tableWrap(
+        '<table class="table"><thead><tr><th>' + colLabel + '</th><th class="col-num">等权涨跌</th><th>龙头</th><th>涨幅最高</th><th>备注</th></tr></thead><tbody>' +
         sBody + "</tbody></table>"
       );
     }
 
-    var top3Inner = "";
-    (day.top3 || []).forEach(function (sec) {
-      top3Inner += '<div class="top3-block"><h3><span>' + esc(sec.nameCn) + '</span>' +
-        '<span class="' + pctClass(sec.changePct) + '">' + fmtPct(sec.changePct) + "</span></h3>";
-      if (sec.take) top3Inner += "<p>" + esc(sec.take) + "</p>";
-      if (sec.bullets && sec.bullets.length) {
-        top3Inner += "<ul>";
-        sec.bullets.forEach(function (b) {
-          top3Inner += "<li>" + esc(b) + "</li>";
-        });
-        top3Inner += "</ul>";
-      }
-      top3Inner += "</div>";
-    });
+    function top3Blocks(rows) {
+      var inner = "";
+      (rows || []).forEach(function (sec) {
+        inner += '<div class="top3-block"><h3><span>' + esc(sec.nameCn) + '</span>' +
+          '<span class="' + pctClass(sec.changePct) + '">' + fmtPct(sec.changePct) + "</span></h3>";
+        if (sec.take) inner += "<p>" + esc(sec.take) + "</p>";
+        if (sec.bullets && sec.bullets.length) {
+          inner += "<ul>";
+          sec.bullets.forEach(function (b) {
+            inner += "<li>" + esc(b) + "</li>";
+          });
+          inner += "</ul>";
+        }
+        inner += "</div>";
+      });
+      return inner;
+    }
+
+    var sectorInner = rankTable(day.sectors, "板块");
+    var top3Inner = top3Blocks(day.top3);
+    var conceptInner = rankTable(day.concepts, "概念");
+    var conceptTop3Inner = top3Blocks(day.conceptTop3);
 
     var mappedInner = "";
     if (day.mappedA && day.mappedA.length) {
@@ -1140,6 +1185,8 @@
             briefDocSection("brief-sec-concl", "结论", conclInner) +
             briefDocSection("brief-sec-sectors", "板块等权涨跌幅", sectorInner) +
             briefDocSection("brief-sec-top3", "前三板块拆解", top3Inner) +
+            briefDocSection("brief-sec-concepts", "概念等权涨跌幅", conceptInner) +
+            briefDocSection("brief-sec-concept-top3", "前三概念拆解", conceptTop3Inner) +
             briefDocSection("brief-sec-mapped", "映射 A 股", mappedInner) +
             briefDocSection("brief-sec-logic", "逻辑链", logicInner) +
             briefDocSection("brief-sec-caveats", "逻辑破绽", caveatsInner) +
@@ -1162,9 +1209,10 @@
     root.innerHTML =
       '<div class="modal-backdrop" data-action="close-modal"><div class="modal" data-action="noop">' +
         "<h2>映射说明</h2>" +
-        "<p>本页种子映射用于演示「美股热度 → A 股候选」流程，不是完备的研究结论，也不是投资建议。</p>" +
+        "<p>本页种子映射用于演示「美股热度 → A 股候选」流程，不是完备的研究结论，也不是投资建议。可随时在 <a href='mapping.html'>映射配置</a> 里改板块、概念和股票对应关系。</p>" +
         "<h3>两层结构</h3>" +
-        "<ul><li>板块 → A 股：点击日榜板块，列出行业/概念候选。</li>" +
+        "<ul><li>板块按 GICS 一级行业，另可增补非 GICS 板块（如加密货币）。点击日榜「板块」卡片，列出行业候选。</li>" +
+        "<li>原来的主题板块（半导体、AI算力等）改成概念标签，一只美股可挂多个。日榜可切到「概念」看等权前三。</li>" +
         "<li>美股个股 → A 股：点击龙头或涨幅最高代码，按业务关系列出。</li></ul>" +
         "<h3>关系类型</h3>" +
         "<ul><li>对标：商业模式或产品地位相近。</li>" +
@@ -1199,6 +1247,7 @@
     state.viewYear = Number(p[0]);
     state.viewMonth = Number(p[1]) - 1;
     state.selectedSectorId = null;
+    state.selectedConceptId = null;
     state.selectedUsTicker = null;
     state.selectedBriefSector = null;
     state.drillMode = null;
@@ -1371,11 +1420,27 @@
         renderDrilldown();
         return;
       }
+      if (action === "set-board-dim") {
+        state.boardDim = t.getAttribute("data-dim") === "concept" ? "concept" : "sector";
+        render();
+        return;
+      }
       if (action === "pick-sector") {
         state.selectedSectorId = t.getAttribute("data-id");
+        state.selectedConceptId = null;
         state.selectedUsTicker = null;
         state.selectedBriefSector = null;
         state.drillMode = "sector";
+        render();
+        if (isNarrow()) scrollToResults();
+        return;
+      }
+      if (action === "pick-concept") {
+        state.selectedConceptId = t.getAttribute("data-id");
+        state.selectedSectorId = null;
+        state.selectedUsTicker = null;
+        state.selectedBriefSector = null;
+        state.drillMode = "concept";
         render();
         if (isNarrow()) scrollToResults();
         return;

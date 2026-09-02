@@ -2,7 +2,7 @@
 
 给后续 Agent 与维护者用的项目说明。改功能时必须同步更新本文档，并在文末「版本记录」追加条目。更短的协作约定见 [AGENTS.md](AGENTS.md)。
 
-当前版本：**v0.1.20**（2026-09-02）
+当前版本：**v0.1.21**（2026-09-02）
 
 ## 1. 项目目标
 
@@ -23,11 +23,14 @@
 
 ```
 index.html                 单页入口（工作副本，顶栏显示最近简报保存时间）
+mapping.html               板块 / 股票映射可视化配置（可随时改）
 archive/YYYY-MM-DD_HHMM.html  按日带时间戳的 index.html 快照（页内 `<base href="../">`）
 briefings/YYYY-MM-DD.md    隔夜简报 Markdown（生成/保存时间写在文头）
 css/app.css                深色金融台样式（涨红跌绿）
-js/data/mapping.js         板块→A股、美股→A股 两层种子映射（MappingData）
-js/data/sample-board.js    美股交易日前 3 板块日榜（SampleBoard，由脚本生成）
+js/data/mapping-seed.js    GICS 板块 + 概念标签 + 美股→A股 种子（MappingSeed）
+js/data/mapping.js         映射 API（MappingData），可叠加本机覆盖
+js/mapping-editor.js       映射配置页
+js/data/sample-board.js    美股交易日板块/概念前 3 日榜（SampleBoard，由脚本生成）
 js/data/market-context.js  关联 A 股行情 + 资讯（MarketContext，由脚本生成）
 js/data/sample-analysis.js 部分股票的示例基本面/技术面文案（SampleAnalysis）
 js/data/briefings.js       隔夜简报（DailyBriefings，按美股日归档）
@@ -48,7 +51,7 @@ README.md                  本文件
 AGENTS.md                  Agent 协作约定
 ```
 
-脚本加载顺序必须保持：`mapping.js` → `sample-board.js` → `market-context.js` → `sample-analysis.js` → `briefings.js` → `store.js` → `app.js`。`market-context.js` 或日榜 / 映射缺失时页面仍可打开：没有行情/资讯或日榜，但有 `briefings.js` 时仍能看隔夜简报。
+脚本加载顺序必须保持：`mapping-seed.js` → `mapping.js` → `sample-board.js` → `market-context.js` → `sample-analysis.js` → `briefings.js` → `store.js` → `app.js`。`market-context.js` 或日榜 / 映射缺失时页面仍可打开：没有行情/资讯或日榜，但有 `briefings.js` 时仍能看隔夜简报。
 
 ## 3. 用户使用路径
 
@@ -57,15 +60,16 @@ AGENTS.md                  Agent 协作约定
 1. **日历**  
    左侧月视图。金色点 = 当日有板块日榜；绿色点 = 当日有隔夜简报；蓝色点 = 当日有已保存分析。支持上月/下月、「最近有数据日」、「今日」。无日榜的日期仍可看简报、做个股分析并保存。
 2. **隔夜简报**  
-   主栏日榜上方，只显示结论标题和前三板块卡片（无日榜文件时）。**点击板块**才在下方映射区列出该板块 A 股；**点击美股代码**才列出该股对应 A 股。点「阅读全文」打开文档阅读层（结论、板块表、前三拆解、映射 A 股、逻辑链、破绽、关注点），不离开当前日历日。Markdown 源文件仍在 `briefings/YYYY-MM-DD.md`，文末可打开。板块全表、逻辑链与破绽不铺在主页。
-3. **美股前 3 板块**  
+   主栏日榜上方，只显示结论标题（有日榜时不重复画三张卡片）。点「阅读全文」打开文档阅读层（结论、GICS 板块表与前三拆解、概念表与前三拆解、映射 A 股、逻辑链、破绽、关注点），不离开当前日历日。主页只保留最上方一个「阅读全文」。Markdown 源文件仍在 `briefings/YYYY-MM-DD.md`，文末可打开。
+3. **美股前 3 日榜**  
+   日榜标题右侧用「板块 / 概念」切换展示维度。板块是 GICS 一级行业，另可增补非 GICS 板块（当前为加密货币）。概念是原来的主题标签（半导体、AI算力等），一只美股可挂多个。  
    每张卡片两行个股：  
-   - **龙头**：映射表预置的板块代表性龙头（产业地位，不是当日涨幅第一）。  
-   - **涨幅最高**：该板块当日涨幅第一。  
+   - **龙头**：映射表预置的代表性龙头（产业地位，不是当日涨幅第一）。  
+   - **涨幅最高**：该组当日涨幅第一。  
    字段：涨跌幅、成交量相对均量、均线位置、趋势、技术备注。  
-   卡片底部展示**当日资讯**，优先龙头与涨幅最高相关标题，其余归入板块。
+   卡片底部展示**当日资讯**，优先龙头与涨幅最高相关标题，其余归入板块或概念。
 4. **映射下钻**  
-   - 点击板块卡片空白处 → 该板块行业/概念级 A 股。  
+   - 点击板块或概念卡片空白处 → 该组行业/概念级 A 股。  
    - 点击美股代码（龙头或涨幅最高）→ 业务对应 A 股，关系类型为 `对标` / `供应链` / `同概念` / `ADR`。  
    - 每只关联 A 股按字段展示：前收、当日涨幅（下一 A 股交易日）、前日涨幅、5 日涨幅、10 日涨幅；涨红跌绿。点击行情字段名可排序。  
    - 行内「分析此股」进入下方分析区。
@@ -73,6 +77,8 @@ AGENTS.md                  Agent 协作约定
    输入 A 股 6 位代码或美股 ticker（大小写不敏感，可带 `.SZ` / `SH` 前缀）。展示该股 + 双向映射，可切换 chip。有种子文案则预填基本面/技术面；否则提示上传走势截图。点「保存到日历」写入**当前选中交易日**。当日已存分析会列出映射股的**代码 + 名称**（及关系类型），并展示上传的走势截图（可点击放大）。
 6. **多选检索**  
    主栏最上方「多选检索」面板：搜索框、已选标签与检索结果在同一块区域内相邻展示。可同时多选，列出这些股票的全部历史分析，可「查看当日」跳转日历。手机上该面板默认收起，点「展开」再用。
+7. **映射配置**  
+   顶栏「映射配置」打开 `mapping.html`，可随时改 GICS 板块、概念标签和股票对应关系。详见第 4.2 节。
 
 ### 3.1 手机 / 平板打开
 
@@ -130,7 +136,7 @@ powershell -ExecutionPolicy Bypass -File tools/install_pull_task.ps1 -Uninstall
 
 ## 4. 数据 schema
 
-### 4.1 BoardDay（板块日榜）
+### 4.1 BoardDay（板块 / 概念日榜）
 
 定义于 `SampleBoard.DAYS`。
 
@@ -138,15 +144,20 @@ powershell -ExecutionPolicy Bypass -File tools/install_pull_task.ps1 -Uninstall
 BoardDay {
   usDate: "YYYY-MM-DD",
   note?: string,
-  sectors: [                    // v0.1 固定 3 条
-    {
-      id: string,               // 对应 MappingData.SECTORS[].id
-      nameCn, nameEn,
-      changePct: number,
-      leader: TechSnap,
-      topGainer: TechSnap
-    }
+  sectors: [                    // GICS + 增补，等权前 3
+    BoardGroup
+  ],
+  concepts: [                   // 原主题标签，等权前 3
+    BoardGroup
   ]
+}
+
+BoardGroup {
+  id: string,                   // 对应 SECTORS[].id 或 CONCEPTS[].id
+  nameCn, nameEn,
+  changePct: number,
+  leader: TechSnap,
+  topGainer: TechSnap
 }
 
 TechSnap {
@@ -159,12 +170,14 @@ TechSnap {
 }
 ```
 
-### 4.2 Mapping（两层映射）
+### 4.2 Mapping（板块 + 概念 + 个股）
 
-全局对象 `MappingData`。
+全局对象 `MappingData`（由 `mapping-seed.js` 的 `MappingSeed` 水合，可选叠加本机覆盖）。
 
-- `SECTORS[]`：`{ id, nameCn, nameEn, leaderTicker, aShares: [{ ticker, name, note }] }`
-- `US_STOCKS[]`：`{ ticker, name, sectorId, aShares: [{ ticker, name, relation, note }] }`
+- `SECTORS[]`：`{ id, nameCn, nameEn, kind: "gics"|"extra", leaderTicker, aShares: [{ ticker, name, note }] }`
+- `CONCEPTS[]`：`{ id, nameCn, nameEn, leaderTicker, aShares: [{ ticker, name, note }] }`（原来的一级主题，现作标签）
+- `US_STOCKS[]`：`{ ticker, name, sectorId, conceptIds: string[], aShares: [{ ticker, name, relation, note }] }`
+- 每只美股只归一个板块（GICS，或 `kind: "extra"` 的增补如加密货币）；`conceptIds` 可挂多个概念。
 - `relation` 只允许：`对标` | `供应链` | `同概念` | `ADR`
 
 主要 API：
@@ -176,8 +189,9 @@ TechSnap {
 | `getMappedFromUs` / `getMappedFromA` | 单方向映射 |
 | `searchStocks(q)` | 名称或代码检索，最多 20 条 |
 | `isKnown(ticker)` | 是否在种子表中 |
+| `sectorById` / `conceptById` | 按 id 取板块或概念 |
 
-**如何改映射：** 只改 [js/data/mapping.js](js/data/mapping.js)。新增美股必须带 `sectorId` 与至少一条 A 股映射；新增板块要同时能被日榜 `sectors[].id` 引用。改完后在版本记录写清增减了哪些 ticker。
+**如何改映射：** 打开 [mapping.html](mapping.html) 可视化增删 GICS 板块、概念标签、板块/概念级 A 股、美股及其 A 股映射。点「保存到本机」写入这个浏览器的 localStorage（key：`ashare-us-screener-mapping-v2`）；用 GitHub Pages 或 `python tools/serve.py` 打开时，刷新研究台即可用新映射。双击 `file://` 打开时两个页面存储不互通，请再「下载种子文件」覆盖 [js/data/mapping-seed.js](js/data/mapping-seed.js)。也可继续手改该种子文件。新增美股必须带 `sectorId` 与至少一条 A 股映射；概念用 `conceptIds`。新增板块要有龙头美股，且能被日榜 `sectors[].id` 引用。改完仓库种子后在版本记录写清增减了哪些 ticker。日榜脚本读的是种子文件，不是本机覆盖，改池子后需重跑 `fetch_board.py`。
 
 **如何更新日榜：** 不要手改 [js/data/sample-board.js](js/data/sample-board.js)（由脚本生成）。在项目根目录运行：
 
@@ -185,7 +199,7 @@ TechSnap {
 python tools/fetch_board.py --start 2026-08-17 --end 2026-09-01
 ```
 
-板块涨幅 = 该板块种子美股当日涨跌幅的等权平均；龙头取 `SECTORS[].leaderTicker`；涨幅最高取该板块种子池当日涨幅第一。缺行情的 ticker 记入 `META.tickersMiss`，页面仍可对个股上传截图。
+板块涨幅 = 该板块种子美股当日涨跌幅的等权平均；概念涨幅按挂了该标签的种子美股同样等权。龙头取 `leaderTicker`；涨幅最高取该组当日涨幅第一。缺行情的 ticker 记入 `META.tickersMiss`，页面仍可对个股上传截图。
 
 **如何加分析范文：** 在 [js/data/sample-analysis.js](js/data/sample-analysis.js) 以 ticker 为键增加 `{ fundamental, technical }`。未知代码走截图空态。
 
@@ -239,8 +253,10 @@ DailyBriefing {
   savedAt: "YYYY-MM-DD HH:MM",      // 北京时间，写入本地文件
   source, mdPath, headline, summary, disclaimer,
   stats: [{ label, value, tone: "up"|"down" }],
-  sectors: [{ nameCn, changePct, leader, topGainer, note }],
-  top3: [{ nameCn, changePct, take, bullets: string[] }],
+  sectors: [{ nameCn, changePct, leader, topGainer, note }],       // GICS + 增补
+  top3: [{ nameCn, changePct, take, bullets: string[] }],          // 板块前三拆解
+  concepts: [{ nameCn, changePct, leader, topGainer, note }],      // 原主题标签全表
+  conceptTop3: [{ nameCn, changePct, take, bullets: string[] }],   // 概念前三拆解
   mappedA: [{ sectorCn, us, role, a, relation, dUsPct, dReactPct }],
   logic: string[],
   caveats: [{ title, detail }],
@@ -284,7 +300,7 @@ AnalysisNote {
 | IndexedDB 库名 | `ashare-us-screener` |
 | object store | `analyses`（keyPath: `id`） |
 | 索引 | `usDate`, `primaryTicker` |
-| localStorage | 本版未使用 |
+| localStorage | `ashare-us-screener-mapping-v2`：映射配置页的本机覆盖（JSON：`{ sectors, concepts, usStocks }`）。无此 key 时用 `mapping-seed.js`。旧 key `…-v1` 不再读取。 |
 
 截图经 canvas 压缩为 JPEG，单张目标约 2MB 以内。数据只存在本机浏览器，清站点数据会丢失笔记。`file://` 下 Chrome/Edge 一般可用 IndexedDB；若不可用，界面会 toast 提示。
 
@@ -302,7 +318,7 @@ AnalysisNote {
 - 输出：覆盖 [js/data/sample-board.js](js/data/sample-board.js)，含 `DAYS` 与 `META`
 - 技术摘要：由日K计算涨跌幅、近 20 日均量比、MA5/10/20 位置与趋势文案；**不是**盘中逐笔
 - 失败回落：未进日榜的日期仍可保存分析；无范文的个股走截图+备注
-- 当前已抓取：`2026-08-17` 至 `2026-09-01`（12 个交易日）。种子 11 个板块、54 只美股；`BYDDY` 无日K，已跳过
+- 当前已抓取：`2026-08-17` 至 `2026-09-01`（12 个交易日）。种子 12 个板块（GICS 11 + 加密货币增补）、11 个概念、78 只美股；`BYDDY` 无日K，已跳过
 
 ### 6.2 关联 A 股行情与资讯
 
@@ -326,19 +342,19 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 ## 7. UI 与实现要点
 
 - 单页结构：顶栏 → 多选检索 → 隔夜简报（结论 + 前三卡片）→ 日榜 → 映射明细（点选后才出现）→ 个股分析 → 当日已存分析。窄屏把简报/日榜提前，检索与分析默认折叠。
-- 简报「阅读全文」是全屏文档层，用 `DailyBriefings` 渲染，不请求 `.md`。Esc 或「关闭」退出。映射表里的 A 股代码可跳去分析。
+- 简报「阅读全文」是全屏文档层，用 `DailyBriefings` 渲染，不请求 `.md`。Esc 或「关闭」退出。映射表里的 A 股代码可跳去分析。主页只保留一个「阅读全文」按钮。
+- 日榜「板块 / 概念」切换只改展示维度，不改选中的日历日。
 - 日历绿色点 = 有隔夜简报；工作副本是根目录 `index.html`，按日快照是 `archive/YYYY-MM-DD_HHMM.html`。
 - 手机/平板：要像 App 一样从主屏幕打开，用 GitHub Pages 的 https 地址「添加到主屏幕」；电脑在线时也可用 `python tools/serve.py`。不要依赖 iCloud 里直接点 HTML。主屏幕全屏没有系统下拉刷新，用页内「刷新」。
 - 当日笔记展示映射股代码与名称；截图以较大预览呈现，点击可放大。
 - 事件委托：`document` 监听 `[data-action]`。板块卡片必须是 `div` 而不是 `button`，以免嵌套按钮被浏览器拆开。
 - 分析表单（textarea、文件选择）不在每次 `render()` 时重建，避免光标丢失。
 - 涨红跌绿遵循 A 股习惯。板块卡片上「龙头」金色标签、「涨幅最高」红色标签；资讯区独立深底、标题加粗偏亮，条目展示日期与时间；映射表行情拆成字段列（前收 / 当日 / 前日 / 5日 / 10日），点击字段名排序。前收只显示价格。
-- 顶栏「映射说明」解释两层映射、关系类型，以及日榜 / A 股行情与资讯的离线抓取方式。
+- 顶栏「映射配置」打开可视化编辑页；「映射说明」解释两层映射、关系类型，以及日榜 / A 股行情与资讯的离线抓取方式。
 
 ## 8. 给 Agent 的扩展清单（尚未实现，待用户补充需求）
 
 - 浏览器内实时行情 / A 股行情
-- 映射表可视化编辑器、导出/导入 JSON
 - 分析笔记导出 Markdown
 - 云同步
 - 封装成 App Store / 应用商店原生壳（Capacitor 等）
@@ -347,10 +363,20 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 
 ## 9. 版本记录
 
-### v0.1.20 — 2026-09-02
+### v0.1.21 — 2026-09-02
 
-- 隔夜简报与日榜延伸到美股交易日 `2026-09-01`（创新药 / 能源 / 互联网科技）。创新药等权第一主要靠 Moderna 单票，礼来收购标题没有做成板块主线；能源连续两日前三，加密货币从 8/31 第一名回吐到最弱。A 股 9/2 反应日在生成时尚未开盘，映射表写 `null` / 「—」，不编造涨跌。
-- 兼容性：IndexedDB 未改。Service Worker 缓存名随版本号，主屏幕打开需重新加载。
+- 日榜板块改按 **GICS 一级行业**（能源、原材料、工业、非必需消费、必需消费、医疗保健、金融、信息技术、通信服务、公用事业、房地产），另增补非 GICS 的「加密货币」。原来的 11 个主题板块改为 **概念标签**，一只美股可挂多个。
+- 日榜同时计算板块等权前三与概念等权前三；界面用「板块 / 概念」切换。隔夜简报阅读层增加概念全表与概念前三拆解。主页去掉重复的「阅读全文」。
+- 种子扩到 78 只美股（补原材料 / 工业 / 公用事业 / 房地产 / 电信 / 必选消费等样本）。`fetch_board.py` / `fetch_context.py` 按 `sectors` 与 `concepts` 两段解析。
+- 合并 `main` 上的 09-01 隔夜：日榜与简报延伸到美股交易日 `2026-09-01`，按 GICS / 概念双维重算。GICS 前三是原材料（林德单票）/ 能源 / 医疗保健；概念前三仍是创新药 / 能源 / 互联网科技。创新药等权第一主要靠 Moderna 单票。A 股 9/2 反应日在生成时尚未开盘，映射表写 `null` / 「—」，不编造涨跌。
+- 兼容性：IndexedDB 未改。映射本机覆盖 key 改为 `ashare-us-screener-mapping-v2`（含 `concepts`），旧 v1 覆盖不再读取。更早简报的主题表保留为 `concepts` / `conceptTop3`；GICS 表按新口径重算，可能与当时正文不完全一致。Service Worker 缓存名随版本号。
+
+### v0.1.20 — 2026-09-01
+
+- 新增映射配置页 `mapping.html`：可视化增删板块、板块级 A 股、美股及其 A 股映射；可保存到本机、下载/导入种子文件、恢复仓库种子。
+- 种子数据抽到 `js/data/mapping-seed.js`（`MappingSeed`）；`mapping.js` 负责 API，并可叠加 localStorage 覆盖。
+- 顶栏增加「映射配置」。日榜 / 资讯脚本改为解析 `mapping-seed.js`。
+- 兼容性：IndexedDB 未改。本机覆盖只影响同一个浏览器源（Pages / `serve.py` 同源刷新即生效；`file://` 下请覆盖种子文件）。旧 `archive/` 快照已补上 `mapping-seed.js` 脚本标签。Service Worker 缓存名随版本号。
 
 ### v0.1.19 — 2026-09-01
 
