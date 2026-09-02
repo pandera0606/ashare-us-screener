@@ -2,7 +2,7 @@
 
 给后续 Agent 与维护者用的项目说明。改功能时必须同步更新本文档，并在文末「版本记录」追加条目。更短的协作约定见 [AGENTS.md](AGENTS.md)。
 
-当前版本：**v0.1.19**（2026-09-01）
+当前版本：**v0.1.20**（2026-09-01）
 
 ## 1. 项目目标
 
@@ -23,10 +23,13 @@
 
 ```
 index.html                 单页入口（工作副本，顶栏显示最近简报保存时间）
+mapping.html               板块 / 股票映射可视化配置（可随时改）
 archive/YYYY-MM-DD_HHMM.html  按日带时间戳的 index.html 快照（页内 `<base href="../">`）
 briefings/YYYY-MM-DD.md    隔夜简报 Markdown（生成/保存时间写在文头）
 css/app.css                深色金融台样式（涨红跌绿）
-js/data/mapping.js         板块→A股、美股→A股 两层种子映射（MappingData）
+js/data/mapping-seed.js    板块→A股、美股→A股 种子数据（MappingSeed）
+js/data/mapping.js         映射 API（MappingData），可叠加本机覆盖
+js/mapping-editor.js       映射配置页
 js/data/sample-board.js    美股交易日前 3 板块日榜（SampleBoard，由脚本生成）
 js/data/market-context.js  关联 A 股行情 + 资讯（MarketContext，由脚本生成）
 js/data/sample-analysis.js 部分股票的示例基本面/技术面文案（SampleAnalysis）
@@ -48,7 +51,7 @@ README.md                  本文件
 AGENTS.md                  Agent 协作约定
 ```
 
-脚本加载顺序必须保持：`mapping.js` → `sample-board.js` → `market-context.js` → `sample-analysis.js` → `briefings.js` → `store.js` → `app.js`。`market-context.js` 或日榜 / 映射缺失时页面仍可打开：没有行情/资讯或日榜，但有 `briefings.js` 时仍能看隔夜简报。
+脚本加载顺序必须保持：`mapping-seed.js` → `mapping.js` → `sample-board.js` → `market-context.js` → `sample-analysis.js` → `briefings.js` → `store.js` → `app.js`。`market-context.js` 或日榜 / 映射缺失时页面仍可打开：没有行情/资讯或日榜，但有 `briefings.js` 时仍能看隔夜简报。
 
 ## 3. 用户使用路径
 
@@ -73,6 +76,8 @@ AGENTS.md                  Agent 协作约定
    输入 A 股 6 位代码或美股 ticker（大小写不敏感，可带 `.SZ` / `SH` 前缀）。展示该股 + 双向映射，可切换 chip。有种子文案则预填基本面/技术面；否则提示上传走势截图。点「保存到日历」写入**当前选中交易日**。当日已存分析会列出映射股的**代码 + 名称**（及关系类型），并展示上传的走势截图（可点击放大）。
 6. **多选检索**  
    主栏最上方「多选检索」面板：搜索框、已选标签与检索结果在同一块区域内相邻展示。可同时多选，列出这些股票的全部历史分析，可「查看当日」跳转日历。手机上该面板默认收起，点「展开」再用。
+7. **映射配置**  
+   顶栏「映射配置」打开 `mapping.html`，可随时改板块和股票对应关系。详见第 4.2 节。
 
 ### 3.1 手机 / 平板打开
 
@@ -161,7 +166,7 @@ TechSnap {
 
 ### 4.2 Mapping（两层映射）
 
-全局对象 `MappingData`。
+全局对象 `MappingData`（由 `mapping-seed.js` 的 `MappingSeed` 水合，可选叠加本机覆盖）。
 
 - `SECTORS[]`：`{ id, nameCn, nameEn, leaderTicker, aShares: [{ ticker, name, note }] }`
 - `US_STOCKS[]`：`{ ticker, name, sectorId, aShares: [{ ticker, name, relation, note }] }`
@@ -177,7 +182,7 @@ TechSnap {
 | `searchStocks(q)` | 名称或代码检索，最多 20 条 |
 | `isKnown(ticker)` | 是否在种子表中 |
 
-**如何改映射：** 只改 [js/data/mapping.js](js/data/mapping.js)。新增美股必须带 `sectorId` 与至少一条 A 股映射；新增板块要同时能被日榜 `sectors[].id` 引用。改完后在版本记录写清增减了哪些 ticker。
+**如何改映射：** 打开 [mapping.html](mapping.html) 可视化增删板块、板块级 A 股、美股及其 A 股映射。点「保存到本机」写入这个浏览器的 localStorage（key：`ashare-us-screener-mapping-v1`）；用 GitHub Pages 或 `python tools/serve.py` 打开时，刷新研究台即可用新映射。双击 `file://` 打开时两个页面存储不互通，请再「下载种子文件」覆盖 [js/data/mapping-seed.js](js/data/mapping-seed.js)。也可继续手改该种子文件。新增美股必须带 `sectorId` 与至少一条 A 股映射；新增板块要有龙头美股，且能被日榜 `sectors[].id` 引用。改完仓库种子后在版本记录写清增减了哪些 ticker。日榜脚本读的是种子文件，不是本机覆盖，改池子后需重跑 `fetch_board.py`。
 
 **如何更新日榜：** 不要手改 [js/data/sample-board.js](js/data/sample-board.js)（由脚本生成）。在项目根目录运行：
 
@@ -284,7 +289,7 @@ AnalysisNote {
 | IndexedDB 库名 | `ashare-us-screener` |
 | object store | `analyses`（keyPath: `id`） |
 | 索引 | `usDate`, `primaryTicker` |
-| localStorage | 本版未使用 |
+| localStorage | `ashare-us-screener-mapping-v1`：映射配置页的本机覆盖（JSON：`{ sectors, usStocks }`）。无此 key 时用 `mapping-seed.js`。 |
 
 截图经 canvas 压缩为 JPEG，单张目标约 2MB 以内。数据只存在本机浏览器，清站点数据会丢失笔记。`file://` 下 Chrome/Edge 一般可用 IndexedDB；若不可用，界面会 toast 提示。
 
@@ -333,12 +338,11 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 - 事件委托：`document` 监听 `[data-action]`。板块卡片必须是 `div` 而不是 `button`，以免嵌套按钮被浏览器拆开。
 - 分析表单（textarea、文件选择）不在每次 `render()` 时重建，避免光标丢失。
 - 涨红跌绿遵循 A 股习惯。板块卡片上「龙头」金色标签、「涨幅最高」红色标签；资讯区独立深底、标题加粗偏亮，条目展示日期与时间；映射表行情拆成字段列（前收 / 当日 / 前日 / 5日 / 10日），点击字段名排序。前收只显示价格。
-- 顶栏「映射说明」解释两层映射、关系类型，以及日榜 / A 股行情与资讯的离线抓取方式。
+- 顶栏「映射配置」打开可视化编辑页；「映射说明」解释两层映射、关系类型，以及日榜 / A 股行情与资讯的离线抓取方式。
 
 ## 8. 给 Agent 的扩展清单（尚未实现，待用户补充需求）
 
 - 浏览器内实时行情 / A 股行情
-- 映射表可视化编辑器、导出/导入 JSON
 - 分析笔记导出 Markdown
 - 云同步
 - 封装成 App Store / 应用商店原生壳（Capacitor 等）
@@ -346,6 +350,13 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 做上述任何一项，都要改 README 版本记录，并核对 schema 是否向后兼容。IndexedDB 升版本时在 `store.js` 的 `onupgradeneeded` 写迁移，不要直接改 keyPath 导致旧笔记丢失。
 
 ## 9. 版本记录
+
+### v0.1.20 — 2026-09-01
+
+- 新增映射配置页 `mapping.html`：可视化增删板块、板块级 A 股、美股及其 A 股映射；可保存到本机、下载/导入种子文件、恢复仓库种子。
+- 种子数据抽到 `js/data/mapping-seed.js`（`MappingSeed`）；`mapping.js` 负责 API，并可叠加 localStorage 覆盖。
+- 顶栏增加「映射配置」。日榜 / 资讯脚本改为解析 `mapping-seed.js`。
+- 兼容性：IndexedDB 未改。本机覆盖只影响同一个浏览器源（Pages / `serve.py` 同源刷新即生效；`file://` 下请覆盖种子文件）。旧 `archive/` 快照已补上 `mapping-seed.js` 脚本标签。Service Worker 缓存名随版本号。
 
 ### v0.1.19 — 2026-09-01
 

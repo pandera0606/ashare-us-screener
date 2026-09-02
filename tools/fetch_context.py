@@ -20,7 +20,7 @@ import urllib.parse
 import urllib.request
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-MAPPING = os.path.join(ROOT, "js", "data", "mapping.js")
+MAPPING = os.path.join(ROOT, "js", "data", "mapping-seed.js")
 BOARD = os.path.join(ROOT, "js", "data", "sample-board.js")
 OUT = os.path.join(ROOT, "js", "data", "market-context.js")
 
@@ -28,9 +28,10 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 CTX = ssl.create_default_context()
 TZ8 = dt.timezone(dt.timedelta(hours=8))
 
-SECTOR_RE = re.compile(
+GROUP_RE = re.compile(
     r'id:\s*"(?P<id>[^"]+)"\s*,\s*nameCn:\s*"(?P<nameCn>[^"]+)"\s*,\s*'
-    r'nameEn:\s*"(?P<nameEn>[^"]+)"\s*,\s*leaderTicker:\s*"(?P<leader>[^"]+)"',
+    r'nameEn:\s*"(?P<nameEn>[^"]+)"\s*,(?:\s*kind:\s*"(?P<kind>[^"]+)"\s*,)?\s*'
+    r'leaderTicker:\s*"(?P<leader>[^"]+)"',
     re.S,
 )
 STOCK_RE = re.compile(
@@ -51,7 +52,47 @@ EXTRA_KW = {
     "software": ["软件", "SaaS", "云服务"],
     "finance": ["美联储", "银行股", "华尔街"],
     "crypto": ["比特币", "加密货币", "Coinbase", "现货ETF", "比特币ETF"],
+    "materials": ["有色金属", "黄金", "化工", "原材料"],
+    "industrials": ["工程机械", "工业股", "航空制造"],
+    "disc": ["可选消费", "零售", "汽车股"],
+    "staples": ["必选消费", "商超", "饮料"],
+    "health": ["医药", "医疗器械", "生物制药"],
+    "it": ["科技股", "半导体", "软件"],
+    "comm": ["流媒体", "电信", "互联网"],
+    "utilities": ["电力股", "公用事业", "核电"],
+    "realestate": ["房地产", "REITs", "铁塔"],
 }
+
+
+def js_array_block(text, key):
+    token = key + ":"
+    i = text.find(token)
+    if i < 0:
+        return ""
+    i = text.find("[", i)
+    if i < 0:
+        return ""
+    depth = 0
+    for j in range(i, len(text)):
+        if text[j] == "[":
+            depth += 1
+        elif text[j] == "]":
+            depth -= 1
+            if depth == 0:
+                return text[i:j + 1]
+    return ""
+
+
+def parse_groups(block):
+    groups = []
+    for m in GROUP_RE.finditer(block or ""):
+        groups.append({
+            "id": m.group("id"),
+            "nameCn": m.group("nameCn"),
+            "nameEn": m.group("nameEn"),
+            "leaderTicker": m.group("leader"),
+        })
+    return groups
 
 
 def http_bytes(url, ref="https://finance.sina.com.cn/"):
@@ -77,16 +118,10 @@ def http_json(url, ref="https://finance.qq.com/"):
 
 def parse_mapping():
     text = open(MAPPING, "r", encoding="utf-8").read()
-    sectors = []
-    for m in SECTOR_RE.finditer(text):
-        sectors.append({
-            "id": m.group("id"),
-            "nameCn": m.group("nameCn"),
-            "nameEn": m.group("nameEn"),
-            "leaderTicker": m.group("leader"),
-        })
+    sectors = parse_groups(js_array_block(text, "sectors"))
+    concepts = parse_groups(js_array_block(text, "concepts"))
     us = {}
-    for m in STOCK_RE.finditer(text):
+    for m in STOCK_RE.finditer(js_array_block(text, "usStocks") or text):
         us[m.group("ticker")] = {
             "name": m.group("name"),
             "sectorId": m.group("sectorId"),
@@ -94,7 +129,18 @@ def parse_mapping():
     a_shares = {}
     for m in A_RE.finditer(text):
         a_shares[m.group("ticker")] = m.group("name")
-    return sectors, us, a_shares
+    return sectors + concepts, us, a_shares
+
+
+def parse_group_snaps(block):
+    ids = re.findall(r'\bid:\s*"([a-z]+)"', block)
+    snaps = re.findall(r'snap\("([A-Z]+)"', block)
+    secs = []
+    for i, sid in enumerate(ids[:3]):
+        leader = snaps[i * 2] if i * 2 < len(snaps) else None
+        gainer = snaps[i * 2 + 1] if i * 2 + 1 < len(snaps) else None
+        secs.append({"id": sid, "leader": leader, "gainer": gainer})
+    return secs
 
 
 def parse_board():
@@ -106,15 +152,22 @@ def parse_board():
         if not re.match(r"\d{4}-\d{2}-\d{2}", us_date):
             continue
         body = part.split("usDate:", 1)[0]
-        ids = re.findall(r'\bid:\s*"([a-z]+)"', body)
-        snaps = re.findall(r'snap\("([A-Z]+)"', body)
-        secs = []
-        for i, sid in enumerate(ids[:3]):
-            leader = snaps[i * 2] if i * 2 < len(snaps) else None
-            gainer = snaps[i * 2 + 1] if i * 2 + 1 < len(snaps) else None
-            secs.append({"id": sid, "leader": leader, "gainer": gainer})
-        if secs:
-            days.append({"usDate": us_date, "sectors": secs})
+        sec_block = body
+        con_block = ""
+        marker = "concepts:"
+        if marker in body:
+            sec_block, con_block = body.split(marker, 1)
+        secs = parse_group_snaps(sec_block)
+        cons = parse_group_snaps(con_block)
+        seen = set()
+        merged = []
+        for item in secs + cons:
+            if item["id"] in seen:
+                continue
+            seen.add(item["id"])
+            merged.append(item)
+        if merged:
+            days.append({"usDate": us_date, "sectors": merged})
     return days
 
 

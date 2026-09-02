@@ -6,7 +6,8 @@ Usage:
   python tools/fetch_board.py --start 2026-08-17 --end 2026-08-25
 
 Source: Tencent Finance daily K (usTICKER.OQ / usTICKER.N).
-Sectors are equal-weight averages of seed US tickers in mapping.js.
+Sectors are equal-weight averages of seed US tickers in mapping-seed.js.
+Concepts (legacy thematic tags) are ranked the same way.
 """
 from __future__ import print_function
 
@@ -20,7 +21,7 @@ import time
 import urllib.request
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-MAPPING = os.path.join(ROOT, "js", "data", "mapping.js")
+MAPPING = os.path.join(ROOT, "js", "data", "mapping-seed.js")
 OUT = os.path.join(ROOT, "js", "data", "sample-board.js")
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -39,17 +40,65 @@ SUFFIX = {
     "NKE": ".N", "KO": ".N", "PG": ".N", "XOM": ".N", "CVX": ".N", "COP": ".N",
     "JPM": ".N", "GS": ".N", "BLK": ".N",
     "COIN": ".OQ", "MSTR": ".OQ", "MARA": ".OQ", "IBIT": ".OQ",
+    "FCX": ".N", "LIN": ".N", "NEM": ".N",
+    "CAT": ".N", "GE": ".N", "HON": ".OQ", "UNP": ".N", "BA": ".N",
+    "NEE": ".N", "DUK": ".N", "SO": ".N",
+    "PLD": ".N", "AMT": ".N", "SPG": ".N",
+    "T": ".N", "VZ": ".N", "DIS": ".N",
+    "HD": ".N", "MCD": ".N", "WMT": ".N", "PEP": ".OQ",
+    "UNH": ".N", "JNJ": ".N", "ABT": ".N",
 }
 
-SECTOR_RE = re.compile(
+GROUP_RE = re.compile(
     r'id:\s*"(?P<id>[^"]+)"\s*,\s*nameCn:\s*"(?P<nameCn>[^"]+)"\s*,\s*'
-    r'nameEn:\s*"(?P<nameEn>[^"]+)"\s*,\s*leaderTicker:\s*"(?P<leader>[^"]+)"',
+    r'nameEn:\s*"(?P<nameEn>[^"]+)"\s*,(?:\s*kind:\s*"(?P<kind>[^"]+)"\s*,)?\s*'
+    r'leaderTicker:\s*"(?P<leader>[^"]+)"',
     re.S,
 )
 STOCK_RE = re.compile(
     r'\{\s*ticker:\s*"(?P<ticker>[A-Z0-9]+)"\s*,\s*name:\s*"(?P<name>[^"]+)"\s*,'
     r'\s*sectorId:\s*"(?P<sectorId>[^"]+)"'
+    r'(?:\s*,\s*conceptIds:\s*\[(?P<conceptIds>[^\]]*)\])?'
 )
+
+
+def js_array_block(text, key):
+    token = key + ":"
+    i = text.find(token)
+    if i < 0:
+        return ""
+    i = text.find("[", i)
+    if i < 0:
+        return ""
+    depth = 0
+    for j in range(i, len(text)):
+        ch = text[j]
+        if ch == "[":
+            depth += 1
+        elif ch == "]":
+            depth -= 1
+            if depth == 0:
+                return text[i:j + 1]
+    return ""
+
+
+def parse_groups(block):
+    groups = []
+    for m in GROUP_RE.finditer(block or ""):
+        groups.append({
+            "id": m.group("id"),
+            "nameCn": m.group("nameCn"),
+            "nameEn": m.group("nameEn"),
+            "kind": m.group("kind") or "gics",
+            "leaderTicker": m.group("leader"),
+        })
+    return groups
+
+
+def parse_concept_ids(raw):
+    if not raw:
+        return []
+    return re.findall(r'"([^"]+)"', raw)
 
 
 def js_str(s):
@@ -58,22 +107,17 @@ def js_str(s):
 
 def parse_mapping():
     text = open(MAPPING, "r", encoding="utf-8").read()
-    sectors = []
-    for m in SECTOR_RE.finditer(text):
-        sectors.append({
-            "id": m.group("id"),
-            "nameCn": m.group("nameCn"),
-            "nameEn": m.group("nameEn"),
-            "leaderTicker": m.group("leader"),
-        })
+    sectors = parse_groups(js_array_block(text, "sectors"))
+    concepts = parse_groups(js_array_block(text, "concepts"))
     stocks = []
-    for m in STOCK_RE.finditer(text):
+    for m in STOCK_RE.finditer(js_array_block(text, "usStocks") or text):
         stocks.append({
             "ticker": m.group("ticker"),
             "name": m.group("name"),
             "sectorId": m.group("sectorId"),
+            "conceptIds": parse_concept_ids(m.group("conceptIds")),
         })
-    return sectors, stocks
+    return sectors, concepts, stocks
 
 
 def http_json(url):
@@ -222,63 +266,88 @@ def trading_dates(histories, start, end):
     return sorted(found)
 
 
-def build_days(sectors, stocks, histories, start, end):
-    name_of = {s["ticker"]: s["name"] for s in stocks}
+def rank_groups(groups, members, name_of, histories, us_date):
+    ranked = []
+    for sec in groups:
+        snaps = []
+        for t in members.get(sec["id"], []):
+            hist = histories.get(t)
+            if not hist:
+                continue
+            snap = snapshot(t, name_of.get(t, t), hist, us_date)
+            if snap:
+                snaps.append(snap)
+        if not snaps:
+            continue
+        avg = sum(x["changePct"] for x in snaps) / float(len(snaps))
+        leader_t = sec["leaderTicker"]
+        leader = None
+        for x in snaps:
+            if x["ticker"] == leader_t:
+                leader = x
+                break
+        if leader is None:
+            leader = sorted(snaps, key=lambda x: -x["changePct"])[0]
+        top = sorted(snaps, key=lambda x: -x["changePct"])[0]
+        ranked.append({
+            "id": sec["id"],
+            "nameCn": sec["nameCn"],
+            "nameEn": sec["nameEn"],
+            "changePct": round(avg, 2),
+            "leader": leader,
+            "topGainer": top,
+            "n": len(snaps),
+        })
+    ranked.sort(key=lambda x: -x["changePct"])
+    return ranked
+
+
+def group_members(groups, stocks, by_field):
     members = {}
-    for sec in sectors:
-        tickers = [s["ticker"] for s in stocks if s["sectorId"] == sec["id"]]
+    for sec in groups:
+        if by_field == "sectorId":
+            tickers = [s["ticker"] for s in stocks if s["sectorId"] == sec["id"]]
+        else:
+            tickers = [s["ticker"] for s in stocks if sec["id"] in (s.get("conceptIds") or [])]
         if sec["leaderTicker"] not in tickers:
             tickers.append(sec["leaderTicker"])
         members[sec["id"]] = tickers
+    return members
+
+
+def top3_note(label, ranked):
+    top3 = ranked[:3]
+    if not top3:
+        return "", []
+    names = "、".join("%s %+.2f%%" % (x["nameCn"], x["changePct"]) for x in top3)
+    split_n = sum(1 for x in top3 if x["leader"]["ticker"] != x["topGainer"]["ticker"])
+    note = "%s前三：%s。" % (label, names)
+    if split_n:
+        note += "其中 %d 个龙头弱于日内最高。" % split_n
+    else:
+        note += "当日三个龙头亦为日内最高。"
+    return note, top3
+
+
+def build_days(sectors, concepts, stocks, histories, start, end):
+    name_of = {s["ticker"]: s["name"] for s in stocks}
+    sector_members = group_members(sectors, stocks, "sectorId")
+    concept_members = group_members(concepts, stocks, "conceptIds")
 
     days = []
     for us_date in trading_dates(histories, start, end):
-        ranked = []
-        for sec in sectors:
-            snaps = []
-            for t in members[sec["id"]]:
-                hist = histories.get(t)
-                if not hist:
-                    continue
-                snap = snapshot(t, name_of.get(t, t), hist, us_date)
-                if snap:
-                    snaps.append(snap)
-            if not snaps:
-                continue
-            avg = sum(x["changePct"] for x in snaps) / float(len(snaps))
-            leader_t = sec["leaderTicker"]
-            leader = None
-            for x in snaps:
-                if x["ticker"] == leader_t:
-                    leader = x
-                    break
-            if leader is None:
-                leader = sorted(snaps, key=lambda x: -x["changePct"])[0]
-            top = sorted(snaps, key=lambda x: -x["changePct"])[0]
-            ranked.append({
-                "id": sec["id"],
-                "nameCn": sec["nameCn"],
-                "nameEn": sec["nameEn"],
-                "changePct": round(avg, 2),
-                "leader": leader,
-                "topGainer": top,
-                "n": len(snaps),
-            })
-        ranked.sort(key=lambda x: -x["changePct"])
-        top3 = ranked[:3]
-        if len(top3) < 1:
+        sector_ranked = rank_groups(sectors, sector_members, name_of, histories, us_date)
+        concept_ranked = rank_groups(concepts, concept_members, name_of, histories, us_date)
+        s_note, s_top = top3_note("板块（GICS+增补）等权", sector_ranked)
+        c_note, c_top = top3_note("概念等权", concept_ranked)
+        if not s_top and not c_top:
             continue
-        names = "、".join("%s %+.2f%%" % (x["nameCn"], x["changePct"]) for x in top3)
-        split_n = sum(1 for x in top3 if x["leader"]["ticker"] != x["topGainer"]["ticker"])
-        note = "种子美股等权，涨幅前三：%s。" % names
-        if split_n:
-            note += "其中 %d 个板块龙头弱于日内最高。" % split_n
-        else:
-            note += "当日三板块龙头亦为日内最高。"
+        note = " ".join(x for x in (s_note, c_note) if x)
         days.append({
             "usDate": us_date,
             "note": note,
-            "sectors": top3,
+            "sectors": s_top,
+            "concepts": c_top,
         })
     days.sort(key=lambda d: d["usDate"], reverse=True)
     return days
@@ -289,6 +358,21 @@ def emit_snap(s):
         js_str(s["ticker"]), js_str(s["name"]), s["changePct"], s["volumeVsAvg"],
         js_str(s["maBias"]), js_str(s["trend"]), js_str(s["techNote"]),
     )
+
+
+def emit_groups(chunks, key, groups, trailing_comma):
+    chunks.append("      %s: [" % key)
+    for j, sec in enumerate(groups or []):
+        comma = "," if j < len(groups) - 1 else ""
+        chunks.append("        {")
+        chunks.append("          id: %s," % js_str(sec["id"]))
+        chunks.append("          nameCn: %s," % js_str(sec["nameCn"]))
+        chunks.append("          nameEn: %s," % js_str(sec["nameEn"]))
+        chunks.append("          changePct: %.2f," % sec["changePct"])
+        chunks.append("          leader: %s," % emit_snap(sec["leader"]))
+        chunks.append("          topGainer: %s" % emit_snap(sec["topGainer"]))
+        chunks.append("        }" + comma)
+    chunks.append("      ]" + ("," if trailing_comma else ""))
 
 
 def emit_js(days, meta):
@@ -321,18 +405,8 @@ def emit_js(days, meta):
         chunks.append("    {")
         chunks.append("      usDate: %s," % js_str(day["usDate"]))
         chunks.append("      note: %s," % js_str(day["note"]))
-        chunks.append("      sectors: [")
-        for j, sec in enumerate(day["sectors"]):
-            comma = "," if j < len(day["sectors"]) - 1 else ""
-            chunks.append("        {")
-            chunks.append("          id: %s," % js_str(sec["id"]))
-            chunks.append("          nameCn: %s," % js_str(sec["nameCn"]))
-            chunks.append("          nameEn: %s," % js_str(sec["nameEn"]))
-            chunks.append("          changePct: %.2f," % sec["changePct"])
-            chunks.append("          leader: %s," % emit_snap(sec["leader"]))
-            chunks.append("          topGainer: %s" % emit_snap(sec["topGainer"]))
-            chunks.append("        }" + comma)
-        chunks.append("      ]")
+        emit_groups(chunks, "sectors", day.get("sectors") or [], True)
+        emit_groups(chunks, "concepts", day.get("concepts") or [], False)
         chunks.append("    }" + ("," if i < len(days) - 1 else ""))
     chunks.append("  ];")
     chunks.append("")
@@ -379,17 +453,17 @@ def main():
     ap.add_argument("--end", default="2026-08-31")
     args = ap.parse_args()
 
-    sectors, stocks = parse_mapping()
+    sectors, concepts, stocks = parse_mapping()
     tickers = []
     seen = set()
     for s in stocks:
         if s["ticker"] not in seen:
             seen.add(s["ticker"])
             tickers.append(s["ticker"])
-    for sec in sectors:
-        if sec["leaderTicker"] not in seen:
-            seen.add(sec["leaderTicker"])
-            tickers.append(sec["leaderTicker"])
+    for group in sectors + concepts:
+        if group["leaderTicker"] not in seen:
+            seen.add(group["leaderTicker"])
+            tickers.append(group["leaderTicker"])
 
     histories = {}
     miss = []
@@ -403,12 +477,12 @@ def main():
             print("MISS", t, type(e).__name__, e)
         time.sleep(0.12)
 
-    days = build_days(sectors, stocks, histories, args.start, args.end)
+    days = build_days(sectors, concepts, stocks, histories, args.start, args.end)
     if not days:
         raise SystemExit("no board days built")
 
     meta = {
-        "provider": "腾讯财经日K · 种子美股等权板块",
+        "provider": "腾讯财经日K · GICS板块/概念等权",
         "source": "tencent-kline",
         "start": args.start,
         "end": args.end,
