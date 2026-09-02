@@ -2,13 +2,121 @@
 var DailyBriefings = (function () {
   var META = {
     timezone: "Asia/Shanghai",
-    savedAt: "2026-09-02 06:37",
-    latestUsDate: "2026-09-01",
+    savedAt: "2026-09-03 06:36",
+    latestUsDate: "2026-09-02",
     mdDir: "briefings",
-    pageSnapshot: "archive/2026-09-02_0637.html"
+    pageSnapshot: "archive/2026-09-03_0636.html"
   };
 
   var DAYS = [
+    {
+      usDate: "2026-09-02",
+      generatedAt: "2026-09-03 06:35",
+      savedAt: "2026-09-03 06:36",
+      source: "腾讯财经日K · 种子美股等权",
+      mdPath: "briefings/2026-09-02.md",
+      headline: "隔夜第一名换成光伏，但量能偏低；昨天的 Moderna 和原油前三都回吐了",
+      summary: "十一板块六个收红，幅度都不大。光伏储能等权第一 +2.00%，主要靠 SolarEdge +4.59%，量能只有 0.70×；资讯只有美国二季度储能装机创新高。互联网第二 +1.21% 是 Meta 更强 AI 模型和奈飞，昨天第三名的苹果人事今夜平盘。创新药第三 +0.77% 换成诺和诺德，Moderna 从 +9.93% 吐到 −2.24%。能源掉出前三。A 股 9/3 反应日尚未开盘，不编造涨跌。",
+      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。A 股光伏 9/2 仍在杀，对着的是更早的美股日，不是今夜这笔。",
+      stats: [
+        { label: "光伏储能（等权第一）", value: "+2.00%", tone: "up" },
+        { label: "互联网科技（第二）", value: "+1.21%", tone: "up" },
+        { label: "创新药（第三）", value: "+0.77%", tone: "up" },
+        { label: "软件SaaS（最弱）", value: "−0.94%", tone: "down" }
+      ],
+      sectors: [
+        { nameCn: "光伏储能", changePct: 2.00, leader: "FSLR +1.48%", topGainer: "SEDG +4.59%", note: "3 只样本，最高量能偏低" },
+        { nameCn: "互联网科技", changePct: 1.21, leader: "AAPL −0.05%", topGainer: "META +2.47%", note: "苹果平盘，Meta / 奈飞拉起" },
+        { nameCn: "创新药", changePct: 0.77, leader: "LLY +0.01%", topGainer: "NVO +3.66%", note: "Moderna 回吐，诺和诺德换上来" },
+        { nameCn: "半导体", changePct: 0.51, leader: "NVDA +3.21%", topGainer: "NVDA +3.21%", note: "龙头即最高，设备股仍绿" },
+        { nameCn: "能源", changePct: 0.28, leader: "XOM −0.24%", topGainer: "COP +0.74%", note: "连续前三结束，龙头转绿" },
+        { nameCn: "消费", changePct: 0.09, leader: "COST −1.22%", topGainer: "PG +0.98%", note: "开市客拖累" },
+        { nameCn: "加密货币", changePct: 0.00, leader: "COIN −1.05%", topGainer: "MARA +2.35%", note: "昨日最弱之后持平" },
+        { nameCn: "新能源车", changePct: -0.40, leader: "TSLA +0.26%", topGainer: "LCID +3.52%", note: "蔚来 −4.93% 放量" },
+        { nameCn: "金融", changePct: -0.44, leader: "JPM +0.36%", topGainer: "JPM +0.36%", note: "贝莱德 −1.86%" },
+        { nameCn: "AI算力", changePct: -0.57, leader: "NVDA +3.21%", topGainer: "NVDA +3.21%", note: "Palantir −5.81% 把等权拉绿" },
+        { nameCn: "软件SaaS", changePct: -0.94, leader: "MSFT −0.84%", topGainer: "ORCL +3.13%", note: "ServiceNow −4.32%；甲骨文反抽" }
+      ],
+      top3: [
+        {
+          nameCn: "光伏储能",
+          changePct: 2.00,
+          take: "等权第一是三只样本加 SolarEdge 单票，不是组件反转。龙头仍跌破 MA10，最高量能偏低。",
+          bullets: [
+            "龙头 FSLR First Solar +1.48%，量能 0.80×，跌破 MA10、回调。资讯未匹配到 First Solar 标题",
+            "最高 SEDG SolarEdge +4.59%，量能 0.70×，MA5 上穿 MA20、震荡。量能偏低，不是放量反转",
+            "ENPH −0.06%。资讯：美国二季度储能装机 20.2 吉瓦时创新高，是板块标题不是个股"
+          ]
+        },
+        {
+          nameCn: "互联网科技",
+          changePct: 1.21,
+          take: "第二名不是苹果续涨。昨天第三名靠库克卸任，今夜苹果平盘；板块被 Meta 和奈飞拉起。",
+          bullets: [
+            "龙头 AAPL 苹果 −0.05%，量能 0.85×，仍站上 MA20。资讯仍是特努斯接棒，股价没有做成第二日",
+            "最高 META Meta +2.47%，量能 1.07×，MA5 上穿 MA20。资讯：发布更强 AI 模型",
+            "NFLX +2.38%；AMZN +0.02% 仍跌破 MA10。亚马逊回吐停住，但没有再拉起来"
+          ]
+        },
+        {
+          nameCn: "创新药",
+          changePct: 0.77,
+          take: "第三名换成诺和诺德，不是礼来，更不是昨天的 Moderna。龙头继续平盘。",
+          bullets: [
+            "龙头 LLY 礼来 +0.01%，量能 0.95×，跌破 MA10、回调。连续两夜平盘",
+            "最高 NVO 诺和诺德 +3.66%，量能 1.20×，站上 MA10。资讯未匹配到标题，不编造成肥胖症主线",
+            "VRTX +1.66%；MRNA −2.24%，量能 0.51×。昨天 +9.93% 的第一名隔夜证伪"
+          ]
+        }
+      ],
+      mappedA: [
+        { sectorCn: "光伏储能", us: "FSLR +1.48%", role: "龙头", a: "隆基绿能 601012", relation: "对标", dUsPct: -2.65, dReactPct: null },
+        { sectorCn: "光伏储能", us: "FSLR +1.48%", role: "龙头", a: "通威股份 600438", relation: "对标", dUsPct: -3.89, dReactPct: null },
+        { sectorCn: "光伏储能", us: "SEDG +4.59%", role: "涨幅最高", a: "阳光电源 300274", relation: "对标", dUsPct: -3.28, dReactPct: null },
+        { sectorCn: "光伏储能", us: "SEDG +4.59%", role: "涨幅最高", a: "锦浪科技 300763", relation: "对标", dUsPct: -2.77, dReactPct: null },
+        { sectorCn: "互联网科技", us: "AAPL −0.05%", role: "龙头", a: "立讯精密 002475", relation: "供应链", dUsPct: 0.28, dReactPct: null },
+        { sectorCn: "互联网科技", us: "AAPL −0.05%", role: "龙头", a: "歌尔股份 002241", relation: "供应链", dUsPct: 0.88, dReactPct: null },
+        { sectorCn: "互联网科技", us: "META +2.47%", role: "涨幅最高", a: "昆仑万维 300418", relation: "同概念", dUsPct: -3.4, dReactPct: null },
+        { sectorCn: "互联网科技", us: "META +2.47%", role: "涨幅最高", a: "掌趣科技 300315", relation: "同概念", dUsPct: -1.44, dReactPct: null },
+        { sectorCn: "创新药", us: "LLY +0.01%", role: "龙头", a: "恒瑞医药 600276", relation: "对标", dUsPct: -1.43, dReactPct: null },
+        { sectorCn: "创新药", us: "LLY +0.01%", role: "龙头", a: "百济神州 688235", relation: "对标", dUsPct: 0.57, dReactPct: null },
+        { sectorCn: "创新药", us: "NVO +3.66%", role: "涨幅最高", a: "通化东宝 600867", relation: "对标", dUsPct: -1.58, dReactPct: null },
+        { sectorCn: "创新药", us: "NVO +3.66%", role: "涨幅最高", a: "甘李药业 603087", relation: "对标", dUsPct: -2.07, dReactPct: null }
+      ],
+      logic: [
+        "光伏第一名是三只样本加 SolarEdge，不是板块反转。等权 +2.00%，SEDG 贡献了大部分，量能 0.70×。龙头仍跌破 MA10。A 股光伏 9/2 继续杀，那是对着更早的美股回调；9/3 能不能接，开盘后再看。",
+        "互联网第二名是 Meta 模型，不是苹果人事续上。库克卸任的标题还在，AAPL 今夜 −0.05%。Meta +2.47% 对着更强 AI 模型。昆仑万维 9/2 −3.40% 是同概念，而且对着更早的交易日。",
+        "创新药第三名证伪了昨天的 Moderna 主线。MRNA 从 +9.93% 变成 −2.24%。换上来的是诺和诺德 +3.66%，礼来连续两夜平盘。不要把创新药热连写两天。",
+        "昨天关注的三条，A 股 9/2 已经给了答案。中国石油 −1.49%、中国海油 −2.14%，连续两夜油价都没有映射到对标股。沃森生物 −3.16%，Moderna 同概念没有接。飞天诚信 −1.63%、四方精创 −0.45%，加密同概念一日游成立。英伟达今夜 +3.21%、MA5 上穿 MA20。"
+      ],
+      caveats: [
+        { title: "光伏样本只有 3 只", detail: "等权第一主要靠 SEDG +4.59%；去掉它，First Solar / Enphase 等权接近 +0.7%。" },
+        { title: "SolarEdge 量能只有 0.70×", detail: "MA5 上穿 MA20 但量能偏低，写成反转过早。" },
+        { title: "光伏个股没有匹配资讯", detail: "标题池只有储能装机创新高，不能写成 First Solar 或逆变器主线。" },
+        { title: "A 股光伏 9/2 仍在杀", detail: "阳光电源 −3.28%、隆基 −2.65%。映射不是传导；9/3 才是今夜这笔的反应日。" },
+        { title: "苹果「龙头」其实收绿", detail: "AAPL −0.05%。把互联网第二写成苹果链，是角色错配。" },
+        { title: "Meta 映射是同概念", detail: "昆仑万维 / 掌趣不是 Facebook 对标。9/2 这两只还在绿。" },
+        { title: "诺和诺德没有匹配资讯", detail: "+3.66% 的原因不明，不能写成减肥药回流。" },
+        { title: "Moderna 第一名隔夜证伪", detail: "量能从昨天 0.80× 降到 0.51×。疫苗同概念 9/2 沃森 −3.16%。" },
+        { title: "能源连续前三结束", detail: "XOM 转绿。油价 90 的叙事在种子三只里已经减弱。" },
+        { title: "AI「龙头即最高」被 Palantir 对冲", detail: "NVDA +3.21%，但 PLTR −5.81%，AI 等权仍绿。" },
+        { title: "软件「最高」是反抽", detail: "ORCL +3.13% 是对昨天 −5.23% 的修复；ServiceNow −4.32% 才是板块最弱。" },
+        { title: "BYDDY 无日K", detail: "新能源车等权少一只，板块涨幅可能略有偏差。" }
+      ],
+      watch: [
+        { point: "SolarEdge 是否一日脉冲", check: "量能只有 0.70×。若隔夜吐回 MA20 下方，光伏第一名就不成立。" },
+        { point: "A 股光伏 9/3", check: "反应日若再杀，美股光伏第一名没有映射到对标股。" },
+        { point: "诺和诺德能否守住 MA10", check: "没有匹配资讯。若隔夜吐回，创新药第三名就是单票。" },
+        { point: "礼来是否仍不跟", check: "连续两夜平盘。收购标题没有做成股价。" },
+        { point: "苹果人事第二日", check: "已平盘。看是否还守住 MA20。" },
+        { point: "英伟达 MA5 上穿 MA20", check: "量能 1.24×。若守住，周五回吐的修复还在；失守就还是弱反抽。" },
+        { point: "Palantir −5.81% 是否扩散", check: "AI 等权已被它拉绿。不要把 NVDA +3.21% 写成算力回流。" },
+        { point: "ServiceNow −4.32% 是否扩散", check: "软件最弱。甲骨文反抽不能写成 SaaS 回暖。" },
+        { point: "原油能否守住 90", check: "能源已掉出前三；中国石油 9/1、9/2 都没跟。" }
+      ],
+      tickersOk: 53,
+      tickersMiss: ["BYDDY"]
+    },
     {
       usDate: "2026-09-01",
       generatedAt: "2026-09-02 06:35",
