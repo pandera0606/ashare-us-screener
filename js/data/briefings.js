@@ -2,13 +2,121 @@
 var DailyBriefings = (function () {
   var META = {
     timezone: "Asia/Shanghai",
-    savedAt: "2026-09-03 06:36",
-    latestUsDate: "2026-09-02",
+    savedAt: "2026-09-04 06:37",
+    latestUsDate: "2026-09-03",
     mdDir: "briefings",
-    pageSnapshot: "archive/2026-09-03_0636.html"
+    pageSnapshot: "archive/2026-09-04_0637.html"
   };
 
   var DAYS = [
+    {
+      usDate: "2026-09-03",
+      generatedAt: "2026-09-04 06:36",
+      savedAt: "2026-09-04 06:37",
+      source: "腾讯财经日K · 种子美股等权",
+      mdPath: "briefings/2026-09-03.md",
+      headline: "隔夜主线换成比特币链普涨，昨天的光伏第一名被 SolarEdge 回吐证伪",
+      summary: "十一板块十个收红，只有能源收绿。加密货币等权第一 +11.08%，四只全红，Strategy +17.56%、Coinbase +10.14%，资讯写比特币突破 8 万美元，没有个股标题。软件从昨天最弱翻到第二 +3.98%，ServiceNow 从 −4.32% 反抽到 +6.49%。AI 第三 +3.26% 是 Palantir 翻昨天 −5.81%，英伟达有 Hugging Face 收购标题却只 +1.80%。SolarEdge 从 +4.59% 吐到 −0.53%。A 股 9/4 反应日尚未开盘，不编造涨跌。",
+      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。A 股没有比特币现货或合规交易所对标，加密货币映射全部是同概念。",
+      stats: [
+        { label: "加密货币（等权第一）", value: "+11.08%", tone: "up" },
+        { label: "软件SaaS（第二）", value: "+3.98%", tone: "up" },
+        { label: "AI算力（第三）", value: "+3.26%", tone: "up" },
+        { label: "能源（最弱）", value: "−0.83%", tone: "down" }
+      ],
+      sectors: [
+        { nameCn: "加密货币", changePct: 11.08, leader: "COIN +10.14%", topGainer: "MSTR +17.56%", note: "4 只全红，量能温和放大" },
+        { nameCn: "软件SaaS", changePct: 3.98, leader: "MSFT +2.68%", topGainer: "NOW +6.49%", note: "昨天最弱，五只全红反抽" },
+        { nameCn: "AI算力", changePct: 3.26, leader: "NVDA +1.80%", topGainer: "PLTR +7.71%", note: "Palantir 翻昨天 −5.81%" },
+        { nameCn: "金融", changePct: 2.23, leader: "JPM +1.64%", topGainer: "GS +3.34%", note: "三只全红，贝莱德仍跌破 MA10" },
+        { nameCn: "新能源车", changePct: 1.39, leader: "TSLA +5.42%", topGainer: "TSLA +5.42%", note: "龙头即最高，Lucid −2.34%" },
+        { nameCn: "互联网科技", changePct: 1.37, leader: "AAPL +1.00%", topGainer: "META +3.01%", note: "Meta 续涨，奈飞平盘" },
+        { nameCn: "光伏储能", changePct: 1.36, leader: "FSLR +2.38%", topGainer: "FSLR +2.38%", note: "SolarEdge 回吐，第一名证伪" },
+        { nameCn: "半导体", changePct: 0.31, leader: "NVDA +1.80%", topGainer: "ARM +3.29%", note: "博通 −2.74% 放量，设备仍弱" },
+        { nameCn: "消费", changePct: 0.30, leader: "COST −0.33%", topGainer: "NKE +1.39%", note: "开市客续绿" },
+        { nameCn: "创新药", changePct: 0.12, leader: "LLY −0.04%", topGainer: "NVO +1.58%", note: "礼来第三夜平盘，Moderna 续跌" },
+        { nameCn: "能源", changePct: -0.83, leader: "XOM −1.18%", topGainer: "CVX −0.22%", note: "三只齐绿，连续前三之后最弱" }
+      ],
+      top3: [
+        {
+          nameCn: "加密货币",
+          changePct: 11.08,
+          take: "四只全红、量能都过 1.3×，不是单票。去掉 Strategy 仍约 +8.9%。映射全是同概念。",
+          bullets: [
+            "龙头 COIN Coinbase +10.14%，量能 1.38×，站上 MA10。资讯未匹配到 Coinbase 标题",
+            "最高 MSTR Strategy +17.56%，量能 1.61×，站上 MA20。比特币财库杠杆，不是营运公司",
+            "MARA +10.79%；IBIT +5.85%。资讯：比特币突破 8 万美元，没有个股标题"
+          ]
+        },
+        {
+          nameCn: "软件SaaS",
+          changePct: 3.98,
+          take: "昨天最弱今夜五只全红翻到第二。这是修复，不是新主线。ServiceNow 没有匹配资讯。",
+          bullets: [
+            "龙头 MSFT 微软 +2.68%，量能 1.02×，站上 MA20。资讯是 2027 财年报告架构，不是产品",
+            "最高 NOW ServiceNow +6.49%，量能 1.00×，站上 MA20。昨天 −4.32%，今夜是回补",
+            "ORCL +5.69% 续修 9/1 的 −5.23%。Snowflake 标题不在种子池"
+          ]
+        },
+        {
+          nameCn: "AI算力",
+          changePct: 3.26,
+          take: "第三名主要是 Palantir 均值回归，不是英伟达收购做成板块。",
+          bullets: [
+            "龙头 NVDA 英伟达 +1.80%，量能 1.05×，MA5 上穿 MA20。资讯：约 130 亿美元收购 Hugging Face",
+            "最高 PLTR Palantir +7.71%，量能 1.07×，站上 MA20。昨天 −5.81%，资讯未匹配到标题",
+            "ANET +2.87% 量能偏低仍跌破 MA10；GOOGL +1.59% 仍跌破 MA20"
+          ]
+        }
+      ],
+      mappedA: [
+        { sectorCn: "加密货币", us: "COIN +10.14%", role: "龙头", a: "东方财富 300059", relation: "同概念", dUsPct: 0.53, dReactPct: null },
+        { sectorCn: "加密货币", us: "COIN +10.14%", role: "龙头", a: "同花顺 300033", relation: "同概念", dUsPct: 1.08, dReactPct: null },
+        { sectorCn: "加密货币", us: "MSTR +17.56%", role: "涨幅最高", a: "东方财富 300059", relation: "同概念", dUsPct: 0.53, dReactPct: null },
+        { sectorCn: "加密货币", us: "MSTR +17.56%", role: "涨幅最高", a: "御银股份 002177", relation: "同概念", dUsPct: -1.31, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "MSFT +2.68%", role: "龙头", a: "金山办公 688111", relation: "对标", dUsPct: 0.27, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "MSFT +2.68%", role: "龙头", a: "用友网络 600588", relation: "同概念", dUsPct: -1.49, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "NOW +6.49%", role: "涨幅最高", a: "泛微网络 603039", relation: "对标", dUsPct: -1.06, dReactPct: null },
+        { sectorCn: "软件SaaS", us: "NOW +6.49%", role: "涨幅最高", a: "致远互联 688369", relation: "对标", dUsPct: -0.88, dReactPct: null },
+        { sectorCn: "AI算力", us: "NVDA +1.80%", role: "龙头", a: "寒武纪 688256", relation: "对标", dUsPct: -0.72, dReactPct: null },
+        { sectorCn: "AI算力", us: "NVDA +1.80%", role: "龙头", a: "海光信息 688041", relation: "对标", dUsPct: -0.41, dReactPct: null },
+        { sectorCn: "AI算力", us: "PLTR +7.71%", role: "涨幅最高", a: "科大讯飞 002230", relation: "同概念", dUsPct: -0.56, dReactPct: null },
+        { sectorCn: "AI算力", us: "PLTR +7.71%", role: "涨幅最高", a: "海康威视 002415", relation: "同概念", dUsPct: -0.57, dReactPct: null }
+      ],
+      logic: [
+        "加密货币第一名是四只共振，不是单票。等权 +11.08%，去掉 Strategy 仍约 +8.9%。资讯在比特币 8 万美元，不在个股。A 股没有交易所 / 现货 ETF 对标；9/3 飞天诚信 −3.32%、御银 −1.31%，同概念在这笔大涨之前还在杀。9/4 能不能接，开盘后再看。",
+        "软件第二名是昨天最弱的回补。ServiceNow 从 −4.32% 到 +6.49%，量能 1.00×。微软标题是 Azure 列报，不是产品。泛微 / 致远 9/3 仍绿，对着的也不是今夜这笔。",
+        "AI 第三名是 Palantir 翻昨天，不是收购主线。英伟达有 Hugging Face 标题却只 +1.80%。Palantir 没有匹配资讯。不要把 NVDA 收购写成算力回流。",
+        "昨天关注的三条，A 股 9/3 已经给了答案。SolarEdge 隔夜 −0.53%，光伏第一名证伪；阳光电源 +0.79%、隆基 −0.43%，没有映射成板块反转。立讯 −1.59%、昆仑万维 −0.27%，苹果人事和 Meta 同概念都没接。甘李 +2.66% 对着诺和诺德。中国石油 −0.44%、中国海油 −1.01%，油价叙事连续第三夜没有映射到对标股。"
+      ],
+      caveats: [
+        { title: "加密货币映射全是同概念", detail: "A 股没有 Coinbase / Strategy / 比特币现货 ETF 对标。东方财富 9/3 只 +0.53%，不是传导。" },
+        { title: "Strategy 是杠杆财库", detail: "+17.56% 放大比特币，不是营运改善。写成加密货币基本面过早。" },
+        { title: "Coinbase / Strategy 没有个股标题", detail: "标题池只有比特币价格，不能写成交易所或增持公告。" },
+        { title: "A 股加密同概念 9/3 仍在杀", detail: "飞天诚信 −3.32%、御银 −1.31%。9/4 才是今夜这笔的反应日。" },
+        { title: "软件是修复不是启动", detail: "ServiceNow 量能 1.00×，昨天刚 −4.32%。Snowflake 标题不在种子池。" },
+        { title: "Palantir 没有匹配资讯", detail: "+7.71% 对着昨天 −5.81%，更像均值回归。" },
+        { title: "英伟达收购标题与涨幅不匹配", detail: "Hugging Face 约 130 亿美元，NVDA 只 +1.80%。不能把第三名写成收购驱动。" },
+        { title: "去掉 Palantir，AI 会掉出前三", detail: "另外四只等权约 +2.15%，低于金融 +2.23%。" },
+        { title: "光伏第一名隔夜证伪", detail: "SEDG −0.53%、量能 0.60×。昨天量能 0.70× 的警告成立。" },
+        { title: "礼来连续三夜平盘", detail: "LLY −0.04%。创新药昨夜已换成诺和诺德，今夜板块只剩 +0.12%。" },
+        { title: "博通放量收绿", detail: "AVGO −2.74%，量能 2.67×。半导体等权只有 +0.31%，不是芯片回流。" },
+        { title: "BYDDY 无日K", detail: "新能源车等权少一只，板块涨幅可能略有偏差。" }
+      ],
+      watch: [
+        { point: "比特币能否守住 8 万", check: "四只共振。若隔夜吐回，加密货币第一名就是一日脉冲。" },
+        { point: "A 股加密同概念 9/4", check: "反应日若不再冲，8/31 那种飞天 / 四方一日游就还是一日游；映射不是传导。" },
+        { point: "ServiceNow 能否守住 MA20", check: "量能持平的反抽。失守就把软件第二名写成修复结束。" },
+        { point: "Palantir 能否守住 MA20", check: "没有资讯。再吐回，AI 第三名就不成立。" },
+        { point: "英伟达收购是否定价完毕", check: "+1.80% 没有做成大阳。看 MA5 是否还在 MA20 上。" },
+        { point: "SolarEdge 是否继续弱", check: "已经证伪第一名。若再破 MA20，光伏这条线关掉。" },
+        { point: "礼来是否仍不跟", check: "连续三夜平盘。收购标题没有做成股价。" },
+        { point: "原油能否止住最弱", check: "能源三只齐绿。中国石油 9/1–9/3 都没跟。" },
+        { point: "特斯拉 +5.42% 是否扩散", check: "新能源车只排第五，Lucid 仍绿。不要写成车链回流。" }
+      ],
+      tickersOk: 53,
+      tickersMiss: ["BYDDY"]
+    },
     {
       usDate: "2026-09-02",
       generatedAt: "2026-09-03 06:35",

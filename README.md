@@ -2,7 +2,7 @@
 
 给后续 Agent 与维护者用的项目说明。改功能时必须同步更新本文档，并在文末「版本记录」追加条目。更短的协作约定见 [AGENTS.md](AGENTS.md)。
 
-当前版本：**v0.1.21**（2026-09-03）
+当前版本：**v0.1.22**（2026-09-04）
 
 ## 1. 项目目标
 
@@ -52,7 +52,7 @@ AGENTS.md                  Agent 协作约定
 
 ## 3. 用户使用路径
 
-日历按**美股交易日** `YYYY-MM-DD` 归档。美股夏令时收盘对应北京时间**次日 04:00** 之后（界面有提示）。默认打开最近一条有日榜或简报的日期（当前简报为 `2026-09-02`）。已抓取日榜区间：`2026-08-17` 至 `2026-09-02`。
+日历按**美股交易日** `YYYY-MM-DD` 归档。美股夏令时收盘对应北京时间**次日 04:00** 之后（界面有提示）。默认打开最近一条有日榜或简报的日期（当前简报为 `2026-09-03`）。已抓取日榜区间：`2026-08-17` 至 `2026-09-03`。
 
 1. **日历**  
    左侧月视图。金色点 = 当日有板块日榜；绿色点 = 当日有隔夜简报；蓝色点 = 当日有已保存分析。支持上月/下月、「最近有数据日」、「今日」。无日榜的日期仍可看简报、做个股分析并保存。
@@ -182,7 +182,7 @@ TechSnap {
 **如何更新日榜：** 不要手改 [js/data/sample-board.js](js/data/sample-board.js)（由脚本生成）。在项目根目录运行：
 
 ```
-python tools/fetch_board.py --start 2026-08-17 --end 2026-09-02
+python tools/fetch_board.py --start 2026-08-17 --end 2026-09-03
 ```
 
 板块涨幅 = 该板块种子美股当日涨跌幅的等权平均；龙头取 `SECTORS[].leaderTicker`；涨幅最高取该板块种子池当日涨幅第一。缺行情的 ticker 记入 `META.tickersMiss`，页面仍可对个股上传截图。
@@ -221,7 +221,7 @@ NewsItem {
 **如何更新行情与资讯：** 不要手改 `market-context.js`。在项目根目录运行：
 
 ```
-python tools/fetch_context.py --start 2026-08-17 --end 2026-09-02
+python tools/fetch_context.py --start 2026-08-17 --end 2026-09-03
 python tools/fetch_context.py --quotes-only   # 只重抓日K（含当日涨幅），沿用已有资讯
 python tools/fetch_context.py --news-only     # 只重抓资讯（含发布时间），沿用已有行情
 ```
@@ -230,7 +230,7 @@ python tools/fetch_context.py --news-only     # 只重抓资讯（含发布时�
 
 ### 4.5 DailyBriefing（隔夜简报）
 
-定义于 `DailyBriefings.DAYS`（[js/data/briefings.js](js/data/briefings.js)）。人类可读副本在 [briefings/YYYY-MM-DD.md](briefings/2026-09-02.md)，文头写生成时间与保存时间。
+定义于 `DailyBriefings.DAYS`（[js/data/briefings.js](js/data/briefings.js)）。人类可读副本在 [briefings/YYYY-MM-DD.md](briefings/2026-09-03.md)，文头写生成时间与保存时间。
 
 ```
 DailyBriefing {
@@ -257,7 +257,7 @@ DailyBriefing {
 **如何保存简报与页面快照：** 把 Markdown 写入 `briefings/YYYY-MM-DD.md`，把同日对象追加进 `js/data/briefings.js` 的 `DAYS`（新日期放数组最前）。然后：
 
 ```
-python tools/archive_index.py --us-date 2026-09-02
+python tools/archive_index.py --us-date 2026-09-03
 ```
 
 会生成 `archive/YYYY-MM-DD_HHMM.html`（页头加 `<base href="../">`，与工作副本共用 `css/`、`js/`），并回写 `DailyBriefings.META.pageSnapshot`。不要 `fetch` 本地 JSON。
@@ -302,7 +302,7 @@ AnalysisNote {
 - 输出：覆盖 [js/data/sample-board.js](js/data/sample-board.js)，含 `DAYS` 与 `META`
 - 技术摘要：由日K计算涨跌幅、近 20 日均量比、MA5/10/20 位置与趋势文案；**不是**盘中逐笔
 - 失败回落：未进日榜的日期仍可保存分析；无范文的个股走截图+备注
-- 当前已抓取：`2026-08-17` 至 `2026-09-02`（13 个交易日）。种子 11 个板块、54 只美股；`BYDDY` 无日K，已跳过
+- 当前已抓取：`2026-08-17` 至 `2026-09-03`（14 个交易日）。种子 11 个板块、54 只美股；`BYDDY` 无日K，已跳过
 
 ### 6.2 关联 A 股行情与资讯
 
@@ -346,6 +346,11 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 做上述任何一项，都要改 README 版本记录，并核对 schema 是否向后兼容。IndexedDB 升版本时在 `store.js` 的 `onupgradeneeded` 写迁移，不要直接改 keyPath 导致旧笔记丢失。
 
 ## 9. 版本记录
+
+### v0.1.22 — 2026-09-04
+
+- 隔夜简报与日榜延伸到美股交易日 `2026-09-03`（加密货币 / 软件SaaS / AI算力）。加密货币四只全红、等权 +11.08%，资讯写比特币突破 8 万美元；映射仍全部是 `同概念`。软件从 9/2 最弱翻到第二，是 ServiceNow 回补不是新主线。AI 第三主要是 Palantir 翻昨天，英伟达有 Hugging Face 收购标题却只 +1.80%。昨天的光伏第一名被 SolarEdge 回吐证伪。A 股 9/4 反应日在生成时尚未开盘，映射表写 `null` / 「—」，不编造涨跌。A 股 9/3 已收盘：逆变器略红、组件仍绿，苹果链和 Meta 同概念没跟上；飞天诚信续跌，对着的是更早的美股日，不是今夜这笔比特币。
+- 兼容性：IndexedDB 未改。Service Worker 缓存名随版本号，主屏幕打开需重新加载。
 
 ### v0.1.21 — 2026-09-03
 
