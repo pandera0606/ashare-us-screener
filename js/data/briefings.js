@@ -2,10 +2,10 @@
 var DailyBriefings = (function () {
   var META = {
     timezone: "Asia/Shanghai",
-    savedAt: "2026-09-26 16:38",
+    savedAt: "2026-09-26 21:56",
     latestUsDate: "2026-09-25",
     mdDir: "briefings",
-    pageSnapshot: "archive/2026-09-26_1638.html"
+    pageSnapshot: "archive/2026-09-26_2156.html"
   };
 
   var DAYS = [
@@ -16,7 +16,7 @@ var DailyBriefings = (function () {
       source: "腾讯财经日K · GICS板块 / 概念等权",
       mdPath: "briefings/2026-09-25.md",
       headline: "GICS 第一是金融 +1.28%，概念第一是光伏储能 +1.45%；去掉 FSLR 后概念第一不成立",
-      summary: "GICS 前三是金融 +1.28%、工业 +1.20%、医疗保健 +0.61%。概念前三是光伏储能 +1.45%、金融 +1.28%、创新药 +0.85%。12 个 GICS+增补里 7 个收红、5 个收绿，最弱是加密货币 −1.82%。概念第一去掉 FSLR 后等权约 +0.57%，低于金融 +1.28%。A 股当日休市（中秋 9/25–9/27），没有同日收盘，反应日 9/28 尚未开盘。",
+      summary: "GICS 前三是金融 +1.28%、工业 +1.12%、医疗保健 +0.61%。概念前三是光伏储能 +1.45%、金融 +1.28%、创新药 +0.85%。12 个 GICS+增补里 7 个收红、5 个收绿，最弱是加密货币 −1.82%。概念第一去掉 FSLR 后等权约 +0.57%，低于金融 +1.28%。A 股当日休市（中秋 9/25–9/27），没有同日收盘，反应日 9/28 尚未开盘。",
       disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。A 股没有比特币现货或合规交易所对标。加密货币是非 GICS 增补板块，同时保留为概念标签。",
       stats: [
         { label: "金融（GICS 第一）", value: "+1.28%", tone: "up" },
@@ -26,7 +26,7 @@ var DailyBriefings = (function () {
       ],
       sectors: [
         { nameCn: "金融", changePct: 1.28, leader: "JPM +1.33%", topGainer: "JPM +1.33%", note: "3 只全红，龙头即最高" },
-        { nameCn: "工业", changePct: 1.2, leader: "CAT +2.03%", topGainer: "FSLR +3.22%", note: "8 只里 6 红 2 绿" },
+        { nameCn: "工业", changePct: 1.12, leader: "CAT +2.03%", topGainer: "FSLR +3.22%", note: "9 只里 7 红 2 绿" },
         { nameCn: "医疗保健", changePct: 0.61, leader: "LLY +0.13%", topGainer: "MRNA +2.08%", note: "7 只全红" }
       ],
       top3: [
@@ -41,8 +41,8 @@ var DailyBriefings = (function () {
         },
         {
           nameCn: "工业",
-          changePct: 1.2,
-          take: "8 只里 6 红 2 绿。",
+          changePct: 1.12,
+          take: "9 只里 7 红 2 绿。新进火箭实验室 +0.46%，等权从 8 只时的 +1.20% 降到 +1.12%。",
           bullets: [
             "龙头 CAT 卡特彼勒 +2.03%，量能 0.82×，MA5上穿MA20。没有匹配到个股标题",
             "最高 FSLR First Solar +3.22%，量能 1.30×，跌破MA10。没有匹配到个股标题",
@@ -66,6 +66,7 @@ var DailyBriefings = (function () {
         { nameCn: "创新药", changePct: 0.85, leader: "LLY +0.13%", topGainer: "MRNA +2.08%", note: "4 只全红" },
         { nameCn: "半导体", changePct: 0.82, leader: "NVDA +0.22%", topGainer: "QCOM +3.97%", note: "13 只里 11 红 2 绿" },
         { nameCn: "AI算力", changePct: 0.76, leader: "NVDA +0.22%", topGainer: "SMCI +4.22%", note: "5 只里 4 红 1 绿" },
+        { nameCn: "商业航天", changePct: 0.45, leader: "SPCX +0.44%", topGainer: "RKLB +0.46%", note: "2 只全红" },
         { nameCn: "消费", changePct: -0.26, leader: "COST +2.93%", topGainer: "COST +2.93%", note: "8 只里 4 红 4 绿，龙头即最高，最高量能 1.99×" },
         { nameCn: "互联网科技", changePct: -0.38, leader: "AAPL +1.53%", topGainer: "AAPL +1.53%", note: "5 只里 3 红 2 绿，龙头即最高" },
         { nameCn: "新能源车", changePct: -0.4, leader: "TSLA −1.54%", topGainer: "GM +2.56%", note: "6 只里 2 红 4 绿" },
@@ -132,7 +133,7 @@ var DailyBriefings = (function () {
         { point: "加密货币 是否继续最弱", check: "−1.82%，4 只全绿。" },
         { point: "9/28 A 股开盘", check: "中秋后的第一根。现在不填涨跌。" }
       ],
-      tickersOk: 77,
+      tickersOk: 79,
       tickersMiss: ["BYDDY"]
     },
     {

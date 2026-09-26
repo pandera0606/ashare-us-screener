@@ -46,7 +46,7 @@ SUFFIX = {
     "CAT": ".N", "GE": ".N", "HON": ".OQ", "UNP": ".N", "BA": ".N",
     "NEE": ".N", "DUK": ".N", "SO": ".N",
     "PLD": ".N", "AMT": ".N", "SPG": ".N",
-    "T": ".N", "VZ": ".N", "DIS": ".N",
+    "T": ".N", "VZ": ".N", "DIS": ".N", "SPCX": ".OQ", "RKLB": ".OQ",
     "HD": ".N", "MCD": ".N", "WMT": ".N", "PEP": ".OQ",
     "UNH": ".N", "JNJ": ".N", "ABT": ".N",
 }

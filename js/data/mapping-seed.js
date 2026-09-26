@@ -320,6 +320,17 @@ var MappingSeed = {
       ]
     },
     {
+      id: "space",
+      nameCn: "商业航天",
+      nameEn: "Commercial Space",
+      leaderTicker: "SPCX",
+      aShares: [
+        { ticker: "601698", name: "中国卫通", note: "卫星通信运营，不是星链" },
+        { ticker: "600118", name: "中国卫星", note: "卫星制造，不是发射服务商" },
+        { ticker: "600879", name: "航天电子", note: "航天电子配套，不是火箭公司" }
+      ]
+    },
+    {
       id: "crypto",
       nameCn: "加密货币",
       nameEn: "Crypto",
@@ -585,6 +596,14 @@ var MappingSeed = {
     { ticker: "BA", name: "波音", sectorId: "industrials", conceptIds: [], aShares: [
         { ticker: "000768", name: "中航西飞", relation: "对标", note: "航空制造" },
         { ticker: "600760", name: "中航沈飞", relation: "对标", note: "军机整机" }
+    ]},
+    { ticker: "RKLB", name: "火箭实验室", sectorId: "industrials", conceptIds: ["space"], aShares: [
+        { ticker: "600118", name: "中国卫星", relation: "同概念", note: "卫星制造，不是小型火箭发射" },
+        { ticker: "600879", name: "航天电子", relation: "同概念", note: "航天电子配套，不是发射服务商" }
+    ]},
+    { ticker: "SPCX", name: "SpaceX", sectorId: "comm", conceptIds: ["space"], aShares: [
+        { ticker: "601698", name: "中国卫通", relation: "同概念", note: "卫星通信运营，不是星链" },
+        { ticker: "600118", name: "中国卫星", relation: "同概念", note: "卫星制造，不是同一公司" }
     ]},
     { ticker: "NEE", name: "新纪元能源", sectorId: "utilities", conceptIds: [], aShares: [
         { ticker: "600900", name: "长江电力", relation: "对标", note: "电力运营龙头" },
