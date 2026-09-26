@@ -40,7 +40,9 @@ SUFFIX = {
     "NKE": ".N", "KO": ".N", "PG": ".N", "XOM": ".N", "CVX": ".N", "COP": ".N",
     "JPM": ".N", "GS": ".N", "BLK": ".N",
     "COIN": ".OQ", "MSTR": ".OQ", "MARA": ".OQ", "IBIT": ".OQ",
-    "FCX": ".N", "LIN": ".N", "NEM": ".N",
+    "FCX": ".N",
+    # usLIN.N 日K从 2023 跳到最新一根，近期交易日缺失；usLIN.OQ 才是连续日K。
+    "LIN": ".OQ", "NEM": ".N",
     "CAT": ".N", "GE": ".N", "HON": ".OQ", "UNP": ".N", "BA": ".N",
     "NEE": ".N", "DUK": ".N", "SO": ".N",
     "PLD": ".N", "AMT": ".N", "SPG": ".N",

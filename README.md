@@ -2,7 +2,7 @@
 
 给后续 Agent 与维护者用的项目说明。改功能时必须同步更新本文档，并在文末「版本记录」追加条目。更短的协作约定见 [AGENTS.md](AGENTS.md)。
 
-当前版本：**v0.1.21**（2026-09-02）
+当前版本：**v0.1.23**（2026-09-26）
 
 ## 1. 项目目标
 
@@ -55,7 +55,7 @@ AGENTS.md                  Agent 协作约定
 
 ## 3. 用户使用路径
 
-日历按**美股交易日** `YYYY-MM-DD` 归档。美股夏令时收盘对应北京时间**次日 04:00** 之后（界面有提示）。默认打开最近一条有日榜或简报的日期（当前简报为 `2026-09-01`）。已抓取日榜区间：`2026-08-17` 至 `2026-09-01`。
+日历按**美股交易日** `YYYY-MM-DD` 归档。美股夏令时收盘对应北京时间**次日 04:00** 之后（界面有提示）。默认打开最近一条有日榜或简报的日期（当前简报为 `2026-09-03`）。已抓取日榜区间：`2026-08-17` 至 `2026-09-03`。
 
 1. **日历**  
    左侧月视图。金色点 = 当日有板块日榜；绿色点 = 当日有隔夜简报；蓝色点 = 当日有已保存分析。支持上月/下月、「最近有数据日」、「今日」。无日榜的日期仍可看简报、做个股分析并保存。
@@ -196,7 +196,7 @@ TechSnap {
 **如何更新日榜：** 不要手改 [js/data/sample-board.js](js/data/sample-board.js)（由脚本生成）。在项目根目录运行：
 
 ```
-python tools/fetch_board.py --start 2026-08-17 --end 2026-09-01
+python tools/fetch_board.py --start 2026-08-17 --end 2026-09-03
 ```
 
 板块涨幅 = 该板块种子美股当日涨跌幅的等权平均；概念涨幅按挂了该标签的种子美股同样等权。龙头取 `leaderTicker`；涨幅最高取该组当日涨幅第一。缺行情的 ticker 记入 `META.tickersMiss`，页面仍可对个股上传截图。
@@ -235,7 +235,7 @@ NewsItem {
 **如何更新行情与资讯：** 不要手改 `market-context.js`。在项目根目录运行：
 
 ```
-python tools/fetch_context.py --start 2026-08-17 --end 2026-09-01
+python tools/fetch_context.py --start 2026-08-17 --end 2026-09-03
 python tools/fetch_context.py --quotes-only   # 只重抓日K（含当日涨幅），沿用已有资讯
 python tools/fetch_context.py --news-only     # 只重抓资讯（含发布时间），沿用已有行情
 ```
@@ -244,7 +244,7 @@ python tools/fetch_context.py --news-only     # 只重抓资讯（含发布时�
 
 ### 4.5 DailyBriefing（隔夜简报）
 
-定义于 `DailyBriefings.DAYS`（[js/data/briefings.js](js/data/briefings.js)）。人类可读副本在 [briefings/YYYY-MM-DD.md](briefings/2026-09-01.md)，文头写生成时间与保存时间。
+定义于 `DailyBriefings.DAYS`（[js/data/briefings.js](js/data/briefings.js)）。人类可读副本在 [briefings/YYYY-MM-DD.md](briefings/2026-09-03.md)，文头写生成时间与保存时间。
 
 ```
 DailyBriefing {
@@ -273,7 +273,7 @@ DailyBriefing {
 **如何保存简报与页面快照：** 把 Markdown 写入 `briefings/YYYY-MM-DD.md`，把同日对象追加进 `js/data/briefings.js` 的 `DAYS`（新日期放数组最前）。然后：
 
 ```
-python tools/archive_index.py --us-date 2026-09-01
+python tools/archive_index.py --us-date 2026-09-03
 ```
 
 会生成 `archive/YYYY-MM-DD_HHMM.html`（页头加 `<base href="../">`，与工作副本共用 `css/`、`js/`），并回写 `DailyBriefings.META.pageSnapshot`。不要 `fetch` 本地 JSON。
@@ -318,7 +318,7 @@ AnalysisNote {
 - 输出：覆盖 [js/data/sample-board.js](js/data/sample-board.js)，含 `DAYS` 与 `META`
 - 技术摘要：由日K计算涨跌幅、近 20 日均量比、MA5/10/20 位置与趋势文案；**不是**盘中逐笔
 - 失败回落：未进日榜的日期仍可保存分析；无范文的个股走截图+备注
-- 当前已抓取：`2026-08-17` 至 `2026-09-01`（12 个交易日）。种子 12 个板块（GICS 11 + 加密货币增补）、11 个概念、78 只美股；`BYDDY` 无日K，已跳过
+- 当前已抓取：`2026-08-17` 至 `2026-09-03`（14 个交易日）。种子 12 个板块（GICS 11 + 加密货币增补）、11 个概念、78 只美股；`BYDDY` 无日K，已跳过
 
 ### 6.2 关联 A 股行情与资讯
 
@@ -363,12 +363,18 @@ MarketDataAdapter.getQuotes(tickers) -> Promise<{ [ticker]: TechSnap }>
 
 ## 9. 版本记录
 
+### v0.1.23 — 2026-09-26
+
+- 合并 `main` 上的 09-02、09-03 隔夜，按 GICS / 概念双维重算，不沿用 main 上 v0.1.21 / v0.1.22 的十一主题名次。09-02：GICS 前三是原材料 +1.40% / 通信服务 +1.13% / 医疗保健 +0.98%；概念前三是光伏储能 +2.00%（SolarEdge 量能 0.70×）/ 互联网科技 +1.30% / 创新药 +0.77%（Moderna 回吐）。09-03：GICS 前三是加密货币 +11.08% / 金融 +2.23% / 信息技术 +1.72%；概念前三是加密货币 / 软件SaaS +3.98% / AI算力 +3.26%。软件和 AI 并进信息技术后被稀释。资讯沿用当时标题池：比特币突破 8 万美元、英伟达约 130 亿美元收购 Hugging Face、微软 2027 财年报告架构、Meta 新模型。A 股反应日已收盘，简报填实际涨跌。
+- `fetch_board.py` 把林德从 `usLIN.N` 改到 `usLIN.OQ`。前者日K从 2023 跳到最新一根，v0.1.21 因此把 9/1 林德写成 +23.86%、原材料等权 +5.61%。连续日K上林德 9/1 是 −0.58%，原材料等权 −2.54%。09-01 简报改为 GICS 前三能源 / 医疗保健 / 公用事业；概念前三仍是创新药 / 能源 / 互联网科技。
+- 兼容性：IndexedDB 未改。Service Worker 缓存名改为 `v0.1.23`，主屏幕打开需重新加载。
+
 ### v0.1.21 — 2026-09-02
 
 - 日榜板块改按 **GICS 一级行业**（能源、原材料、工业、非必需消费、必需消费、医疗保健、金融、信息技术、通信服务、公用事业、房地产），另增补非 GICS 的「加密货币」。原来的 11 个主题板块改为 **概念标签**，一只美股可挂多个。
 - 日榜同时计算板块等权前三与概念等权前三；界面用「板块 / 概念」切换。隔夜简报阅读层增加概念全表与概念前三拆解。主页去掉重复的「阅读全文」。
 - 种子扩到 78 只美股（补原材料 / 工业 / 公用事业 / 房地产 / 电信 / 必选消费等样本）。`fetch_board.py` / `fetch_context.py` 按 `sectors` 与 `concepts` 两段解析。
-- 合并 `main` 上的 09-01 隔夜：日榜与简报延伸到美股交易日 `2026-09-01`，按 GICS / 概念双维重算。GICS 前三是原材料（林德单票）/ 能源 / 医疗保健；概念前三仍是创新药 / 能源 / 互联网科技。创新药等权第一主要靠 Moderna 单票。A 股 9/2 反应日在生成时尚未开盘，映射表写 `null` / 「—」，不编造涨跌。
+- 合并 `main` 上的 09-01 隔夜：日榜与简报延伸到美股交易日 `2026-09-01`，按 GICS / 概念双维重算。当时 GICS 前三写成原材料（林德单票）/ 能源 / 医疗保健；v0.1.23 已更正，林德那笔来自断裂日K。概念前三仍是创新药 / 能源 / 互联网科技。创新药等权第一主要靠 Moderna 单票。A 股 9/2 反应日在生成时尚未开盘，映射表当时写 `null` / 「—」。
 - 兼容性：IndexedDB 未改。映射本机覆盖 key 改为 `ashare-us-screener-mapping-v2`（含 `concepts`），旧 v1 覆盖不再读取。更早简报的主题表保留为 `concepts` / `conceptTop3`；GICS 表按新口径重算，可能与当时正文不完全一致。Service Worker 缓存名随版本号。
 
 ### v0.1.20 — 2026-09-01

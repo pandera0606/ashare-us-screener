@@ -2,62 +2,357 @@
 var DailyBriefings = (function () {
   var META = {
     timezone: "Asia/Shanghai",
-    savedAt: "2026-09-02 06:37",
-    latestUsDate: "2026-09-01",
+    savedAt: "2026-09-26 10:45",
+    latestUsDate: "2026-09-03",
     mdDir: "briefings",
-    pageSnapshot: "archive/2026-09-02_0637.html"
+    pageSnapshot: "archive/2026-09-26_1045.html"
   };
 
   var DAYS = [
     {
-      usDate: "2026-09-01",
-      generatedAt: "2026-09-02 06:35",
-      savedAt: "2026-09-02 06:37",
+      usDate: "2026-09-03",
+      generatedAt: "2026-09-26 10:42",
+      savedAt: "2026-09-26 10:45",
       source: "腾讯财经日K · GICS板块 / 概念等权",
-      mdPath: "briefings/2026-09-01.md",
-      headline: "GICS 第一是原材料林德单票；概念第一仍是 Moderna，昨天的加密货币隔夜回吐",
-      summary: "GICS 前三是原材料 +5.61%（林德 +23.86%）、能源 +2.47%、医疗保健 +1.83%。概念维度第一仍是创新药 +2.58%，主要靠 Moderna +9.93%；礼来有收购标题却只 +0.28%。能源两维都是第二。概念第三互联网科技只 +0.06%（苹果人事，样本加入 DIS 后更淡）。加密货币从昨天第一变成最弱 −4.78%。A 股 9/2 反应日尚未开盘，不编造涨跌。",
+      mdPath: "briefings/2026-09-03.md",
+      headline: "两维第一都是加密货币；GICS 第二是金融，概念第二才是软件回补",
+      summary: "GICS 前三是加密货币 +11.08%、金融 +2.23%、信息技术 +1.72%。概念前三是加密货币、软件SaaS +3.98%、AI算力 +3.26%。软件和 AI 并进信息技术后被稀释。四只加密全红。SolarEdge 从 +4.59% 吐到 −0.53%。能源最弱 −0.83%。A 股 9/4 已收盘：四方精创 +14.58% 是同概念，东方财富只 +0.74%。",
       disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。A 股没有比特币现货或合规交易所对标。加密货币是非 GICS 增补板块，同时保留为概念标签。",
       stats: [
-        { label: "原材料（GICS 第一）", value: "+5.61%", tone: "up" },
-        { label: "创新药（概念第一）", value: "+2.58%", tone: "up" },
-        { label: "能源（两维第二）", value: "+2.47%", tone: "up" },
-        { label: "加密货币（最弱）", value: "−4.78%", tone: "down" }
+        { label: "加密货币（两维第一）", value: "+11.08%", tone: "up" },
+        { label: "金融（GICS 第二）", value: "+2.23%", tone: "up" },
+        { label: "软件SaaS（概念第二）", value: "+3.98%", tone: "up" },
+        { label: "能源（最弱）", value: "−0.83%", tone: "down" }
       ],
       sectors: [
-        { nameCn: "原材料", changePct: 5.61, leader: "LIN +23.86%", topGainer: "LIN +23.86%", note: "3 只样本，林德单票，龙头即最高" },
-        { nameCn: "能源", changePct: 2.47, leader: "XOM +2.24%", topGainer: "COP +2.79%", note: "3 只全红，连续两日前三" },
-        { nameCn: "医疗保健", changePct: 1.83, leader: "LLY +0.28%", topGainer: "MRNA +9.93%", note: "7 只样本，Moderna 被保险/器械稀释" }
+        { nameCn: "加密货币", changePct: 11.08, leader: "COIN +10.14%", topGainer: "MSTR +17.56%", note: "4 只全红，量能都过 1.3×" },
+        { nameCn: "金融", changePct: 2.23, leader: "JPM +1.64%", topGainer: "GS +3.34%", note: "3 只全红，贝莱德仍跌破 MA10" },
+        { nameCn: "信息技术", changePct: 1.72, leader: "NVDA +1.80%", topGainer: "PLTR +7.71%", note: "22 只，软件和 AI 被稀释" }
+      ],
+      top3: [
+        {
+          nameCn: "加密货币",
+          changePct: 11.08,
+          take: "四只全红、量能都过 1.3×。去掉 Strategy 仍约 +8.9%。映射全是同概念。",
+          bullets: [
+            "龙头 COIN Coinbase +10.14%，量能 1.38×，站上 MA10。资讯未匹配到 Coinbase 标题",
+            "最高 MSTR Strategy +17.56%，量能 1.62×，站上 MA20。比特币财库杠杆，不是营运公司",
+            "MARA +10.79%；IBIT +5.85%。资讯：比特币突破 8 万美元，没有个股标题"
+          ]
+        },
+        {
+          nameCn: "金融",
+          changePct: 2.23,
+          take: "GICS 第二名。概念榜上金融只排第四，因为软件和 AI 插在前面。三只全红。",
+          bullets: [
+            "龙头 JPM 摩根大通 +1.64%，量能 1.00×，站上 MA10、震荡",
+            "最高 GS 高盛 +3.34%，量能 0.92×，站上 MA10。BLK +1.72% 仍跌破 MA10",
+            "A 股 9/4 招商 +1.51%、兴业 +1.62%，券商更淡。同向但幅度小"
+          ]
+        },
+        {
+          nameCn: "信息技术",
+          changePct: 1.72,
+          take: "22 只等权把软件 +3.98% 和 AI +3.26% 稀释成第三。不要把 GICS 第三读成软件或算力主线。",
+          bullets: [
+            "龙头 NVDA 英伟达 +1.80%，量能 1.06×，MA5 上穿 MA20。资讯：约 130 亿美元收购 Hugging Face",
+            "最高 PLTR Palantir +7.71%，量能 1.07×。昨天 −5.81%，没有匹配资讯",
+            "AVGO −2.74%，量能 2.67×。博通放量收绿，半导体等权只有 +0.31%"
+          ]
+        }
+      ],
+      concepts: [
+        { nameCn: "加密货币", changePct: 11.08, leader: "COIN +10.14%", topGainer: "MSTR +17.56%", note: "4 只全红" },
+        { nameCn: "软件SaaS", changePct: 3.98, leader: "MSFT +2.68%", topGainer: "NOW +6.49%", note: "昨天最弱，五只全红反抽" },
+        { nameCn: "AI算力", changePct: 3.26, leader: "NVDA +1.80%", topGainer: "PLTR +7.71%", note: "Palantir 翻昨天 −5.81%" },
+        { nameCn: "金融", changePct: 2.23, leader: "JPM +1.64%", topGainer: "GS +3.34%", note: "三只全红" },
+        { nameCn: "新能源车", changePct: 1.38, leader: "TSLA +5.42%", topGainer: "TSLA +5.42%", note: "龙头即最高，Lucid −2.34%" },
+        { nameCn: "光伏储能", changePct: 1.36, leader: "FSLR +2.38%", topGainer: "FSLR +2.38%", note: "SolarEdge 回吐，第一名证伪" },
+        { nameCn: "互联网科技", changePct: 0.94, leader: "AAPL +1.00%", topGainer: "META +3.01%", note: "Meta 续涨，奈飞平盘" },
+        { nameCn: "半导体", changePct: 0.31, leader: "NVDA +1.80%", topGainer: "ARM +3.29%", note: "博通 −2.74% 放量" },
+        { nameCn: "创新药", changePct: 0.12, leader: "LLY −0.04%", topGainer: "NVO +1.58%", note: "礼来第三夜平盘，Moderna 续跌" },
+        { nameCn: "消费", changePct: 0.03, leader: "COST −0.33%", topGainer: "NKE +1.39%", note: "开市客续绿" },
+        { nameCn: "能源", changePct: -0.83, leader: "XOM −1.18%", topGainer: "CVX −0.22%", note: "三只齐绿" }
+      ],
+      conceptTop3: [
+        {
+          nameCn: "加密货币",
+          changePct: 11.08,
+          take: "四只共振，不是单票。去掉 Strategy 仍约 +8.9%。资讯在比特币价格，不在个股。",
+          bullets: [
+            "龙头 COIN +10.14%，量能 1.38×，站上 MA10",
+            "最高 MSTR +17.56%，量能 1.62×，站上 MA20",
+            "MARA +10.79%；IBIT +5.85%。资讯：比特币突破 8 万美元"
+          ]
+        },
+        {
+          nameCn: "软件SaaS",
+          changePct: 3.98,
+          take: "昨天最弱今夜五只全红。这是修复，不是新主线。GICS 上看不见这个名次。",
+          bullets: [
+            "龙头 MSFT +2.68%，量能 1.03×。资讯是 2027 财年报告架构，不是产品",
+            "最高 NOW +6.49%，量能 1.00×。昨天 −4.32%，没有匹配资讯",
+            "ORCL +5.69% 续修 9/1 的 −5.23%。Snowflake 不在种子池"
+          ]
+        },
+        {
+          nameCn: "AI算力",
+          changePct: 3.26,
+          take: "主要是 Palantir 均值回归。去掉它，另外四只等权约 +2.15%，低于金融。",
+          bullets: [
+            "龙头 NVDA +1.80%，量能 1.06×。资讯：约 130 亿美元收购 Hugging Face",
+            "最高 PLTR +7.71%，量能 1.07×。昨天 −5.81%，没有匹配资讯",
+            "ANET +2.87% 量能 0.70× 仍跌破 MA10；寒武纪 9/4 −2.54%，对标没跟"
+          ]
+        }
+      ],
+      mappedA: [
+        { sectorCn: "加密货币", us: "COIN +10.14%", role: "龙头", a: "东方财富 300059", relation: "同概念", dUsPct: 0.53, dReactPct: 0.74 },
+        { sectorCn: "加密货币", us: "COIN +10.14%", role: "龙头", a: "同花顺 300033", relation: "同概念", dUsPct: 1.08, dReactPct: 1.14 },
+        { sectorCn: "加密货币", us: "MSTR +17.56%", role: "涨幅最高", a: "东方财富 300059", relation: "同概念", dUsPct: 0.53, dReactPct: 0.74 },
+        { sectorCn: "加密货币", us: "MSTR +17.56%", role: "涨幅最高", a: "御银股份 002177", relation: "同概念", dUsPct: -1.31, dReactPct: 1.66 },
+        { sectorCn: "加密货币", us: "MARA +10.79%", role: "样本", a: "四方精创 300468", relation: "同概念", dUsPct: -1.76, dReactPct: 14.58 },
+        { sectorCn: "加密货币", us: "MARA +10.79%", role: "样本", a: "飞天诚信 300386", relation: "同概念", dUsPct: -3.32, dReactPct: 2.7 },
+        { sectorCn: "金融", us: "JPM +1.64%", role: "龙头", a: "招商银行 600036", relation: "对标", dUsPct: 0.49, dReactPct: 1.51 },
+        { sectorCn: "金融", us: "JPM +1.64%", role: "龙头", a: "兴业银行 601166", relation: "对标", dUsPct: 0.17, dReactPct: 1.62 },
+        { sectorCn: "金融", us: "GS +3.34%", role: "涨幅最高", a: "中信证券 600030", relation: "对标", dUsPct: 1.42, dReactPct: 0.47 },
+        { sectorCn: "金融", us: "GS +3.34%", role: "涨幅最高", a: "华泰证券 601688", relation: "对标", dUsPct: 1.46, dReactPct: 0.31 },
+        { sectorCn: "软件SaaS", us: "MSFT +2.68%", role: "龙头", a: "金山办公 688111", relation: "对标", dUsPct: 0.27, dReactPct: 1.65 },
+        { sectorCn: "软件SaaS", us: "MSFT +2.68%", role: "龙头", a: "用友网络 600588", relation: "同概念", dUsPct: -1.49, dReactPct: 2.72 },
+        { sectorCn: "软件SaaS", us: "NOW +6.49%", role: "涨幅最高", a: "泛微网络 603039", relation: "对标", dUsPct: -1.06, dReactPct: 0.79 },
+        { sectorCn: "软件SaaS", us: "NOW +6.49%", role: "涨幅最高", a: "致远互联 688369", relation: "对标", dUsPct: -0.88, dReactPct: 0.79 },
+        { sectorCn: "AI算力", us: "NVDA +1.80%", role: "龙头", a: "寒武纪 688256", relation: "对标", dUsPct: -0.72, dReactPct: -2.54 },
+        { sectorCn: "AI算力", us: "NVDA +1.80%", role: "龙头", a: "海光信息 688041", relation: "对标", dUsPct: -0.41, dReactPct: -1.03 },
+        { sectorCn: "AI算力", us: "PLTR +7.71%", role: "涨幅最高", a: "科大讯飞 002230", relation: "同概念", dUsPct: -0.56, dReactPct: 0.77 },
+        { sectorCn: "AI算力", us: "PLTR +7.71%", role: "涨幅最高", a: "海康威视 002415", relation: "同概念", dUsPct: -0.57, dReactPct: -0.31 }
+      ],
+      logic: [
+        "加密货币第一名是四只共振。等权 +11.08%，去掉 Strategy 仍约 +8.9%。资讯在比特币 8 万美元。反应日东方财富只 +0.74%；四方精创 +14.58% 是同概念，对着 Marathon，不是矿场对标。",
+        "GICS 第二是金融，概念第二是软件修复。ServiceNow 从 −4.32% 到 +6.49%，量能 1.00×。泛微 / 致远 9/4 只 +0.79%。招商、兴业约 +1.5%。",
+        "AI 第三名是 Palantir 翻昨天，不是收购主线。英伟达有 Hugging Face 标题却只 +1.80%。寒武纪 9/4 −2.54%、海光 −1.03%。",
+        "昨天的光伏概念第一名隔夜证伪。SolarEdge −0.53%、量能 0.60×。能源三只齐绿，中国石油 9/4 −0.37%。"
+      ],
+      caveats: [
+        { title: "加密货币映射全是同概念", detail: "A 股没有交易所或现货 ETF 对标。东方财富 9/4 只 +0.74%。" },
+        { title: "四方精创不是矿场", detail: "+14.58% 对着 Marathon，关系是同概念。一天涨幅不能写成跟上比特币链。" },
+        { title: "Strategy 是杠杆财库", detail: "+17.56% 放大比特币，不是营运改善。" },
+        { title: "软件是修复不是启动", detail: "ServiceNow 量能 1.00×，昨天刚 −4.32%。Snowflake 不在种子池。" },
+        { title: "Palantir 没有匹配资讯", detail: "+7.71% 对着昨天 −5.81%，更像均值回归。" },
+        { title: "收购标题与涨幅不匹配", detail: "Hugging Face 约 130 亿美元，NVDA 只 +1.80%。寒武纪、海光 9/4 还在绿。" },
+        { title: "去掉 Palantir，AI 掉出概念前三", detail: "另外四只等权约 +2.15%，低于金融 +2.23%。" },
+        { title: "信息技术第三名被稀释", detail: "22 只等权 +1.72%。不要读成软件或 AI 主线。" },
+        { title: "光伏第一名隔夜证伪", detail: "SEDG −0.53%、量能 0.60×。" },
+        { title: "BYDDY 无日K", detail: "新能源车等权少一只，板块涨幅可能略有偏差。" }
+      ],
+      watch: [
+        { point: "比特币能否守住 8 万", check: "四只共振。若隔夜吐回，第一名就是一日脉冲。" },
+        { point: "四方精创能否离开一天", check: "9/4 已大涨，但是同概念。吐回就还是一日游。" },
+        { point: "ServiceNow 能否守住 MA20", check: "量能持平的反抽。失守就把软件第二名写成修复结束。" },
+        { point: "Palantir 能否守住 MA20", check: "没有资讯。再吐回，AI 第三名就不成立。" },
+        { point: "英伟达收购是否定价完毕", check: "+1.80% 没有做成大阳。看寒武纪是否还绿。" },
+        { point: "SolarEdge 是否继续弱", check: "已经证伪概念第一。若再破 MA20，光伏这条线关掉。" },
+        { point: "原油能否止住最弱", check: "能源三只齐绿。中国石油 9/1 到 9/4 都没跟出趋势。" }
+      ],
+      tickersOk: 77,
+      tickersMiss: ["BYDDY"]
+    },
+    {
+      usDate: "2026-09-02",
+      generatedAt: "2026-09-26 10:42",
+      savedAt: "2026-09-26 10:45",
+      source: "腾讯财经日K · GICS板块 / 概念等权",
+      mdPath: "briefings/2026-09-02.md",
+      headline: "GICS 第一是原材料小幅普涨，概念第一仍是光伏；Moderna 掉出前三",
+      summary: "GICS 前三是原材料 +1.40%（纽蒙特 +2.06%，林德只 +0.14%）、通信服务 +1.13%、医疗保健 +0.98%。概念第一是光伏储能 +2.00%，主要靠 SolarEdge +4.59%、量能 0.70×。互联网第二 +1.30%，苹果平盘。创新药第三 +0.77% 换成诺和诺德，Moderna 从 +9.93% 吐到 −2.24%。能源掉出前三。",
+      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。光伏在 GICS 里归工业，点「板块」看不到概念第一。",
+      stats: [
+        { label: "原材料（GICS 第一）", value: "+1.40%", tone: "up" },
+        { label: "光伏储能（概念第一）", value: "+2.00%", tone: "up" },
+        { label: "互联网科技（概念第二）", value: "+1.30%", tone: "up" },
+        { label: "软件SaaS（概念最弱）", value: "−0.94%", tone: "down" }
+      ],
+      sectors: [
+        { nameCn: "原材料", changePct: 1.40, leader: "LIN +0.14%", topGainer: "NEM +2.06%", note: "3 只都红，林德量能 0.61×" },
+        { nameCn: "通信服务", changePct: 1.13, leader: "GOOGL +0.63%", topGainer: "META +2.47%", note: "6 只，电信把 Meta / 奈飞稀释" },
+        { nameCn: "医疗保健", changePct: 0.98, leader: "LLY +0.01%", topGainer: "NVO +3.66%", note: "7 只，Moderna −2.24% 被稀释" }
       ],
       top3: [
         {
           nameCn: "原材料",
-          changePct: 5.61,
-          take: "GICS 第一不是创新药。三只原材料里林德 +23.86%，龙头即最高。不要把等权第一写成大宗商品普涨。",
+          changePct: 1.40,
+          take: "三只小红，不是林德脉冲。龙头弱于最高。不要和 9/1 旧稿的 +23.86% 连着读。",
           bullets: [
-            "龙头即最高 LIN 林德 +23.86%，量能 1.13×，站上 MA20、上升",
-            "样本只有 FCX / LIN / NEM 三只。去掉林德，板块等权会大幅回落",
-            "点日榜「概念」看不到原材料；创新药仍是概念第一"
+            "龙头 LIN 林德 +0.14%，量能 0.61×，站上 MA20、上升",
+            "最高 NEM 纽蒙特 +2.06%，量能 0.76×，站上 MA20、回调；FCX +2.01%",
+            "杭氧 9/3 +3.79% 对不上林德这只平盘。山东黄金反应日 −1.03%"
           ]
         },
         {
+          nameCn: "通信服务",
+          changePct: 1.13,
+          take: "概念互联网是 +1.30%。GICS 把电信并进来后稀释。龙头谷歌不是涨幅最高。",
+          bullets: [
+            "龙头 GOOGL +0.63%，量能 1.01×，仍跌破 MA10",
+            "最高 META +2.47%，量能 1.08×，MA5 上穿 MA20。资讯：发布更强 AI 模型",
+            "NFLX +2.38%；DIS +1.66%；T / VZ 接近平盘"
+          ]
+        },
+        {
+          nameCn: "医疗保健",
+          changePct: 0.98,
+          take: "比概念创新药 +0.77% 略高，是保险和器械在红，把 Moderna 的拖累冲淡了。",
+          bullets: [
+            "龙头 LLY +0.01%，量能 0.95×，跌破 MA10。连续两夜平盘",
+            "最高 NVO +3.66%，量能 1.20×，站上 MA10。没有匹配资讯",
+            "MRNA −2.24%，量能 0.51×。昨天 +9.93% 的概念第一隔夜证伪"
+          ]
+        }
+      ],
+      concepts: [
+        { nameCn: "光伏储能", changePct: 2.00, leader: "FSLR +1.48%", topGainer: "SEDG +4.59%", note: "3 只，最高量能 0.70×" },
+        { nameCn: "互联网科技", changePct: 1.30, leader: "AAPL −0.05%", topGainer: "META +2.47%", note: "5 只含 DIS，苹果平盘" },
+        { nameCn: "创新药", changePct: 0.77, leader: "LLY +0.01%", topGainer: "NVO +3.66%", note: "Moderna 回吐，诺和诺德换上来" },
+        { nameCn: "半导体", changePct: 0.51, leader: "NVDA +3.21%", topGainer: "NVDA +3.21%", note: "龙头即最高，设备股仍弱" },
+        { nameCn: "能源", changePct: 0.28, leader: "XOM −0.24%", topGainer: "COP +0.74%", note: "连续前三结束，龙头转绿" },
+        { nameCn: "消费", changePct: 0.06, leader: "COST −1.22%", topGainer: "PG +0.98%", note: "开市客拖累" },
+        { nameCn: "加密货币", changePct: 0.00, leader: "COIN −1.05%", topGainer: "MARA +2.35%", note: "昨日最弱之后持平" },
+        { nameCn: "新能源车", changePct: -0.40, leader: "TSLA +0.26%", topGainer: "LCID +3.52%", note: "蔚来 −4.93%，量能 2.15×" },
+        { nameCn: "金融", changePct: -0.44, leader: "JPM +0.36%", topGainer: "JPM +0.36%", note: "贝莱德 −1.86%" },
+        { nameCn: "AI算力", changePct: -0.57, leader: "NVDA +3.21%", topGainer: "NVDA +3.21%", note: "Palantir −5.81% 把等权拉绿" },
+        { nameCn: "软件SaaS", changePct: -0.94, leader: "MSFT −0.84%", topGainer: "ORCL +3.13%", note: "ServiceNow −4.32%；甲骨文反抽" }
+      ],
+      conceptTop3: [
+        {
+          nameCn: "光伏储能",
+          changePct: 2.00,
+          take: "三只样本加 SolarEdge。龙头仍跌破 MA10，最高量能偏低。GICS 工业只排第四。",
+          bullets: [
+            "龙头 FSLR +1.48%，量能 0.80×，跌破 MA10。没有个股标题",
+            "最高 SEDG +4.59%，量能 0.70×，MA5 上穿 MA20。不是放量反转",
+            "ENPH −0.06%。资讯是美国二季度储能装机创新高，不是个股"
+          ]
+        },
+        {
+          nameCn: "互联网科技",
+          changePct: 1.30,
+          take: "不是苹果续涨。AAPL −0.05%。样本含 DIS，等权高于旧的十一主题口径。",
+          bullets: [
+            "龙头 AAPL −0.05%，量能 0.85×，仍站上 MA20。人事标题没有做成第二日",
+            "最高 META +2.47%，量能 1.08×。资讯：发布更强 AI 模型",
+            "NFLX +2.38%；DIS +1.66%；AMZN +0.02% 仍跌破 MA10"
+          ]
+        },
+        {
+          nameCn: "创新药",
+          changePct: 0.77,
+          take: "换成诺和诺德，不是礼来，更不是昨天的 Moderna。",
+          bullets: [
+            "龙头 LLY +0.01%，量能 0.95×，跌破 MA10。连续两夜平盘",
+            "最高 NVO +3.66%，量能 1.20×，站上 MA10。没有匹配资讯",
+            "MRNA −2.24%，量能 0.51×。昨天 +9.93% 隔夜证伪"
+          ]
+        }
+      ],
+      mappedA: [
+        { sectorCn: "原材料", us: "LIN +0.14%", role: "龙头", a: "杭氧股份 002430", relation: "对标", dUsPct: -0.86, dReactPct: 3.79 },
+        { sectorCn: "原材料", us: "LIN +0.14%", role: "龙头", a: "万华化学 600309", relation: "同概念", dUsPct: -2.41, dReactPct: 2.96 },
+        { sectorCn: "原材料", us: "NEM +2.06%", role: "涨幅最高", a: "山东黄金 600547", relation: "对标", dUsPct: 2.71, dReactPct: -1.03 },
+        { sectorCn: "原材料", us: "NEM +2.06%", role: "涨幅最高", a: "中金黄金 600489", relation: "对标", dUsPct: -2.56, dReactPct: 4.01 },
+        { sectorCn: "光伏储能", us: "FSLR +1.48%", role: "龙头", a: "隆基绿能 601012", relation: "对标", dUsPct: -2.65, dReactPct: -0.43 },
+        { sectorCn: "光伏储能", us: "FSLR +1.48%", role: "龙头", a: "通威股份 600438", relation: "对标", dUsPct: -3.89, dReactPct: -0.7 },
+        { sectorCn: "光伏储能", us: "SEDG +4.59%", role: "涨幅最高", a: "阳光电源 300274", relation: "对标", dUsPct: -3.3, dReactPct: 0.79 },
+        { sectorCn: "光伏储能", us: "SEDG +4.59%", role: "涨幅最高", a: "锦浪科技 300763", relation: "对标", dUsPct: -2.77, dReactPct: 0.62 },
+        { sectorCn: "互联网科技", us: "AAPL −0.05%", role: "龙头", a: "立讯精密 002475", relation: "供应链", dUsPct: 0.28, dReactPct: -1.59 },
+        { sectorCn: "互联网科技", us: "AAPL −0.05%", role: "龙头", a: "歌尔股份 002241", relation: "供应链", dUsPct: 0.88, dReactPct: -1.49 },
+        { sectorCn: "互联网科技", us: "META +2.47%", role: "涨幅最高", a: "昆仑万维 300418", relation: "同概念", dUsPct: -3.4, dReactPct: -0.27 },
+        { sectorCn: "互联网科技", us: "META +2.47%", role: "涨幅最高", a: "掌趣科技 300315", relation: "同概念", dUsPct: -1.44, dReactPct: -2.2 },
+        { sectorCn: "创新药", us: "LLY +0.01%", role: "龙头", a: "恒瑞医药 600276", relation: "对标", dUsPct: -1.43, dReactPct: 0.86 },
+        { sectorCn: "创新药", us: "LLY +0.01%", role: "龙头", a: "百济神州 688235", relation: "对标", dUsPct: 0.57, dReactPct: 0.32 },
+        { sectorCn: "创新药", us: "NVO +3.66%", role: "涨幅最高", a: "通化东宝 600867", relation: "对标", dUsPct: -1.58, dReactPct: -0.25 },
+        { sectorCn: "创新药", us: "NVO +3.66%", role: "涨幅最高", a: "甘李药业 603087", relation: "对标", dUsPct: -2.07, dReactPct: 2.66 }
+      ],
+      logic: [
+        "概念第一是光伏，GICS 第一不是。SolarEdge 贡献了大部分等权，量能 0.70×。A 股组件 9/3 仍绿，逆变器只是小红。",
+        "GICS 原材料第一是三只小红。林德 +0.14%、量能 0.61×。杭氧 9/3 +3.79% 对不上这只平盘。",
+        "互联网第二名是 Meta 模型，不是苹果人事续上。AAPL −0.05%。昆仑万维 9/3 仍 −0.27%，而且是同概念。",
+        "创新药第三名证伪了昨天的 Moderna。沃森 9/2 −3.16%，9/3 只 +0.08%。诺和诺德没有匹配资讯。",
+        "能源连续前三结束。XOM 转绿。中国石油 9/2、9/3 都绿，中国海油也没有跟。"
+      ],
+      caveats: [
+        { title: "光伏样本只有 3 只", detail: "去掉 SEDG，First Solar / Enphase 等权接近 +0.7%。" },
+        { title: "SolarEdge 量能只有 0.70×", detail: "MA5 上穿 MA20 但量能偏低，写成反转过早。" },
+        { title: "光伏个股没有匹配资讯", detail: "标题只有储能装机，不能写成逆变器主线。" },
+        { title: "杭氧大涨对不上林德", detail: "林德 +0.14%，杭氧 9/3 +3.79%。" },
+        { title: "黄金两只 A 股方向相反", detail: "山东黄金 9/3 −1.03%，中金黄金 +4.01%。" },
+        { title: "苹果龙头其实收绿", detail: "AAPL −0.05%。把互联网第二写成苹果链是角色错配。" },
+        { title: "Meta 映射是同概念", detail: "昆仑万维 / 掌趣 9/3 仍绿。" },
+        { title: "诺和诺德没有匹配资讯", detail: "+3.66% 不能写成减肥药回流。" },
+        { title: "Moderna 第一名隔夜证伪", detail: "量能降到 0.51×。疫苗同概念没有接上。" },
+        { title: "AI 被 Palantir 对冲", detail: "NVDA +3.21%，PLTR −5.81%，AI 等权仍绿。" },
+        { title: "软件最高是反抽", detail: "ORCL +3.13% 对着昨天 −5.23%；ServiceNow −4.32%。" },
+        { title: "BYDDY 无日K", detail: "新能源车等权少一只，板块涨幅可能略有偏差。" }
+      ],
+      watch: [
+        { point: "SolarEdge 是否一日脉冲", check: "量能只有 0.70×。若隔夜吐回，光伏概念第一就不成立。" },
+        { point: "A 股光伏能否离开绿", check: "9/3 组件仍绿。若再杀，就没有映射到对标股。" },
+        { point: "诺和诺德能否守住 MA10", check: "没有匹配资讯。若隔夜吐回，创新药第三名就是单票。" },
+        { point: "礼来是否仍不跟", check: "连续两夜平盘。收购标题没有做成股价。" },
+        { point: "苹果是否守住 MA20", check: "人事第二日已平盘。" },
+        { point: "英伟达 MA5 上穿 MA20", check: "量能 1.24×。Palantir −5.81% 不要写成算力回流。" },
+        { point: "ServiceNow −4.32% 是否扩散", check: "软件最弱。甲骨文反抽不能写成 SaaS 回暖。" }
+      ],
+      tickersOk: 77,
+      tickersMiss: ["BYDDY"]
+    },
+    {
+      usDate: "2026-09-01",
+      generatedAt: "2026-09-02 06:35",
+      savedAt: "2026-09-26 10:45",
+      source: "腾讯财经日K · GICS板块 / 概念等权",
+      mdPath: "briefings/2026-09-01.md",
+      headline: "GICS 第一是能源；概念第一仍是 Moderna。林德 +23.86% 来自断裂日K",
+      summary: "连续日K上林德 9/1 是 −0.58%，原材料等权 −2.54%，不是旧稿的 +5.61%。GICS 前三改为能源 +2.47%、医疗保健 +1.83%、公用事业 +0.41%。概念前三仍是创新药 +2.58% / 能源 / 互联网科技 +0.06%。加密货币最弱 −4.78%。A 股 9/2 石油股续跌，加密同概念回吐。",
+      disclaimer: "技术摘要由日K推算，不是盘中逐笔。种子映射与行情不构成投资建议。usLIN.N 日K从 2023 跳到最新一根，旧稿的林德涨幅已作废。加密货币是非 GICS 增补板块，同时保留为概念标签。",
+      stats: [
+        { label: "能源（GICS 第一）", value: "+2.47%", tone: "up" },
+        { label: "创新药（概念第一）", value: "+2.58%", tone: "up" },
+        { label: "医疗保健（GICS 第二）", value: "+1.83%", tone: "up" },
+        { label: "加密货币（最弱）", value: "−4.78%", tone: "down" }
+      ],
+      sectors: [
+        { nameCn: "能源", changePct: 2.47, leader: "XOM +2.24%", topGainer: "COP +2.79%", note: "3 只全红，连续两日前三" },
+        { nameCn: "医疗保健", changePct: 1.83, leader: "LLY +0.28%", topGainer: "MRNA +9.93%", note: "7 只样本，Moderna 被保险/器械稀释" },
+        { nameCn: "公用事业", changePct: 0.41, leader: "NEE +0.72%", topGainer: "NEE +0.72%", note: "3 只小红，仍跌破 MA10" }
+      ],
+      top3: [
+        {
           nameCn: "能源",
           changePct: 2.47,
-          take: "昨天第二、今天还是第二，GICS 与概念同一组石油股。三只全红，趋势仍标震荡。样本只有 3 只，等权就是油价。",
+          take: "GICS 第一、概念第二，同一组石油股。三只全红，趋势仍标震荡。样本只有 3 只，等权就是油价。",
           bullets: [
             "龙头 XOM 埃克森美孚 +2.24%，量能 0.81×，站上 MA10、震荡",
             "最高 COP 康菲石油 +2.79%，量能 0.92×；CVX +2.38%",
-            "资讯：WTI 自 7 月下旬以来首次突破 90 美元，美伊敌对升级；能源 ETF 刷新阶段新高"
+            "资讯：WTI 突破 90 美元、美伊敌对升级。中国石油 9/2 −1.52%，没有接上"
           ]
         },
         {
           nameCn: "医疗保健",
           changePct: 1.83,
-          take: "GICS 把创新药和保险/器械并进医疗保健，等权 +1.83%，低于概念创新药 +2.58%。龙头仍是礼来，最高仍是 Moderna。",
+          take: "GICS 第二。创新药概念是 +2.58%，并进保险/器械后被稀释。龙头仍是礼来，最高仍是 Moderna。",
           bullets: [
-            "龙头 LLY 礼来 +0.28%，量能 0.91×，跌破 MA10、回调。资讯：礼来最高 28.75 亿美元现金收购 Merida",
-            "最高 MRNA Moderna +9.93%，量能 0.80×，站上 MA10、震荡。资讯未匹配到 Moderna 标题，不编造原因",
-            "不要把 GICS 第三直接读成创新药主线；点日榜「概念」才是 +2.58% 的四只样本"
+            "龙头 LLY 礼来 +0.28%，量能 0.91×，跌破 MA10。资讯：现金收购 Merida",
+            "最高 MRNA Moderna +9.93%，量能 0.80×，站上 MA10。没有匹配到 Moderna 标题",
+            "点日榜「概念」才是四只样本的 +2.58%"
+          ]
+        },
+        {
+          nameCn: "公用事业",
+          changePct: 0.41,
+          take: "第三名是跌得少，不是电力主线。三只都小红，仍跌破 MA10。龙头即最高。",
+          bullets: [
+            "龙头即最高 NEE 新纪元能源 +0.72%，量能 1.06×，跌破 MA10、回调",
+            "DUK +0.40%；SO +0.10%",
+            "长江电力 9/2 +1.13%，龙源电力 −0.99%。不要写成公用事业映射"
           ]
         }
       ],
@@ -65,7 +360,7 @@ var DailyBriefings = (function () {
         { nameCn: "创新药", changePct: 2.58, leader: "LLY +0.28%", topGainer: "MRNA +9.93%", note: "4 只样本，等权被 Moderna 单票拉起" },
         { nameCn: "能源", changePct: 2.47, leader: "XOM +2.24%", topGainer: "COP +2.79%", note: "3 只全红，连续两日前三" },
         { nameCn: "互联网科技", changePct: 0.06, leader: "AAPL +2.61%", topGainer: "AAPL +2.61%", note: "5 只样本含 DIS，苹果单票，亚马逊续跌" },
-        { nameCn: "消费", changePct: -0.71, leader: "COST −0.42%", topGainer: "PG +0.75%", note: "耐克续跌" },
+        { nameCn: "消费", changePct: -0.94, leader: "COST −0.42%", topGainer: "PG +0.75%", note: "龙头与最高未变，等权较旧稿下修" },
         { nameCn: "光伏储能", changePct: -0.88, leader: "FSLR −1.11%", topGainer: "SEDG +0.90%", note: "趋势仍回调" },
         { nameCn: "金融", changePct: -1.65, leader: "JPM −0.30%", topGainer: "JPM −0.30%", note: "三只齐绿" },
         { nameCn: "半导体", changePct: -1.94, leader: "NVDA −1.51%", topGainer: "AVGO −0.18%", note: "13 只全绿，设备股更弱" },
@@ -78,78 +373,74 @@ var DailyBriefings = (function () {
         {
           nameCn: "创新药",
           changePct: 2.58,
-          take: "等权第一是 Moderna 单票，不是礼来、也不是肥胖症叙事。四只里两红两绿，龙头弱于最高。",
+          take: "等权第一是 Moderna 单票，不是礼来、也不是肥胖症叙事。四只里两红两绿。",
           bullets: [
-            "龙头 LLY 礼来 +0.28%，量能 0.91×，跌破 MA10、回调。资讯：礼来最高 28.75 亿美元现金收购 Merida",
-            "最高 MRNA Moderna +9.93%，量能 0.80×，站上 MA10、震荡。资讯未匹配到 Moderna 标题，不编造原因",
+            "龙头 LLY 礼来 +0.28%，量能 0.91×，跌破 MA10。资讯：收购 Merida",
+            "最高 MRNA +9.93%，量能 0.80×，站上 MA10。没有匹配资讯",
             "VRTX +0.57%；NVO −0.46%。去掉 Moderna，其余三只等权接近 0"
           ]
         },
         {
           nameCn: "能源",
           changePct: 2.47,
-          take: "昨天第二、今天还是第二。三只石油股全红，趋势仍标震荡。样本只有 3 只，等权就是油价。",
+          take: "概念第二、GICS 第一。三只石油股全红。A 股 9/2 没有接上。",
           bullets: [
-            "龙头 XOM 埃克森美孚 +2.24%，量能 0.81×，站上 MA10、震荡",
-            "最高 COP 康菲石油 +2.79%，量能 0.92×；CVX +2.38%",
-            "资讯：WTI 自 7 月下旬以来首次突破 90 美元，美伊敌对升级；能源 ETF 刷新阶段新高"
+            "龙头 XOM +2.24%，量能 0.81×，站上 MA10",
+            "最高 COP +2.79%，量能 0.92×；CVX +2.38%",
+            "中国石油 9/2 −1.52%，中国海油 −2.14%"
           ]
         },
         {
           nameCn: "互联网科技",
           changePct: 0.06,
-          take: "第三名几乎是苹果一只。龙头即最高。亚马逊继续回吐周五轮动，不是科技回流。加入 DIS 后等权从旧口径 +0.38% 淡到 +0.06%。",
+          take: "第三名几乎是苹果一只。加入 DIS 后等权从旧口径 +0.38% 淡到 +0.06%。",
           bullets: [
-            "龙头即最高 AAPL 苹果 +2.61%，量能 1.31×，站上 MA20、上升。资讯：库克卸任苹果 CEO",
-            "META +1.08%，MA5 上穿 MA20、震荡",
-            "NFLX −0.30%；AMZN −1.87% 跌破 MA10。周五 +3.97%、周一 −2.50%、本夜再吐"
+            "龙头即最高 AAPL +2.61%，量能 1.31×，站上 MA20。资讯：库克卸任 CEO",
+            "META +1.08%，MA5 上穿 MA20",
+            "NFLX −0.30%；AMZN −1.87% 跌破 MA10"
           ]
         }
       ],
       mappedA: [
-        { sectorCn: "原材料", us: "LIN +23.86%", role: "龙头", a: "杭氧股份 002430", relation: "对标", dUsPct: -2.15, dReactPct: null },
-        { sectorCn: "原材料", us: "LIN +23.86%", role: "龙头", a: "万华化学 600309", relation: "同概念", dUsPct: 0.92, dReactPct: null },
-        { sectorCn: "创新药", us: "LLY +0.28%", role: "龙头", a: "恒瑞医药 600276", relation: "对标", dUsPct: 0.35, dReactPct: null },
-        { sectorCn: "创新药", us: "LLY +0.28%", role: "龙头", a: "百济神州 688235", relation: "对标", dUsPct: -1.17, dReactPct: null },
-        { sectorCn: "创新药", us: "MRNA +9.93%", role: "涨幅最高", a: "沃森生物 300142", relation: "同概念", dUsPct: 0.22, dReactPct: null },
-        { sectorCn: "创新药", us: "MRNA +9.93%", role: "涨幅最高", a: "康泰生物 300601", relation: "同概念", dUsPct: 1.89, dReactPct: null },
-        { sectorCn: "能源", us: "XOM +2.24%", role: "龙头", a: "中国石油 601857", relation: "对标", dUsPct: 0.09, dReactPct: null },
-        { sectorCn: "能源", us: "XOM +2.24%", role: "龙头", a: "中国海油 600938", relation: "对标", dUsPct: -0.58, dReactPct: null },
-        { sectorCn: "能源", us: "COP +2.79%", role: "涨幅最高", a: "中国海油 600938", relation: "对标", dUsPct: -0.58, dReactPct: null },
-        { sectorCn: "互联网科技", us: "AAPL +2.61%", role: "龙头", a: "立讯精密 002475", relation: "供应链", dUsPct: -1.21, dReactPct: null },
-        { sectorCn: "互联网科技", us: "AAPL +2.61%", role: "龙头", a: "歌尔股份 002241", relation: "供应链", dUsPct: -1.32, dReactPct: null }
+        { sectorCn: "公用事业", us: "NEE +0.72%", role: "龙头", a: "长江电力 600900", relation: "对标", dUsPct: 1.1, dReactPct: 1.13 },
+        { sectorCn: "公用事业", us: "NEE +0.72%", role: "龙头", a: "龙源电力 001289", relation: "同概念", dUsPct: 0.33, dReactPct: -0.99 },
+        { sectorCn: "创新药", us: "LLY +0.28%", role: "龙头", a: "恒瑞医药 600276", relation: "对标", dUsPct: 0.35, dReactPct: -1.43 },
+        { sectorCn: "创新药", us: "LLY +0.28%", role: "龙头", a: "百济神州 688235", relation: "对标", dUsPct: -1.17, dReactPct: 0.57 },
+        { sectorCn: "创新药", us: "MRNA +9.93%", role: "涨幅最高", a: "沃森生物 300142", relation: "同概念", dUsPct: 0.22, dReactPct: -3.16 },
+        { sectorCn: "创新药", us: "MRNA +9.93%", role: "涨幅最高", a: "康泰生物 300601", relation: "同概念", dUsPct: 1.89, dReactPct: 0.15 },
+        { sectorCn: "能源", us: "XOM +2.24%", role: "龙头", a: "中国石油 601857", relation: "对标", dUsPct: 0.09, dReactPct: -1.52 },
+        { sectorCn: "能源", us: "XOM +2.24%", role: "龙头", a: "中国海油 600938", relation: "对标", dUsPct: -0.58, dReactPct: -2.14 },
+        { sectorCn: "能源", us: "COP +2.79%", role: "涨幅最高", a: "中国海油 600938", relation: "对标", dUsPct: -0.58, dReactPct: -2.14 },
+        { sectorCn: "互联网科技", us: "AAPL +2.61%", role: "龙头", a: "立讯精密 002475", relation: "供应链", dUsPct: -1.21, dReactPct: 0.28 },
+        { sectorCn: "互联网科技", us: "AAPL +2.61%", role: "龙头", a: "歌尔股份 002241", relation: "供应链", dUsPct: -1.32, dReactPct: 0.88 }
       ],
       logic: [
-        "GICS 第一是原材料，不是创新药。等权 +5.61% 几乎全是林德 +23.86%；概念维度第一仍是创新药 +2.58%。两套榜不要混着读。",
-        "创新药第一名是 Moderna 单票，不是礼来收购。四只等权 +2.58%，MRNA 贡献了绝大部分。礼来有收购标题却只 +0.28%，诺和诺德还绿。GICS 医疗保健把保险/器械并进来后只剩 +1.83%。",
-        "能源第二名是油价，而且是连续第二天。昨天布伦特破 90，今天资讯写 WTI 破 90、美伊升级。三只样本全红。A 股石油股 9/1 已经没跟；9/2 能不能接，开盘后再看。",
-        "互联网第三名是苹果人事，不是科技回流。库克卸任 CEO 的标题对着 AAPL +2.61%。亚马逊把周五轮动继续吐掉。半导体 13 只全绿、软件里甲骨文 −5.23%。",
-        "昨天加密货币第一名隔夜证伪。COIN / MSTR 从 +5.31% / +4.42% 变成 −6.01% / −6.06%。A 股 9/1 飞天诚信 +8.26%、四方精创 +6.79% 是对着 8/31 那一脚同概念；9/2 才是检验一日游的日子。"
+        "GICS 第一是能源，不是原材料。旧稿林德 +23.86% 来自断裂的 usLIN.N。连续日K上原材料等权 −2.54%。概念第一仍是创新药 +2.58%。",
+        "创新药第一名是 Moderna 单票，不是礼来收购。四只等权 +2.58%。GICS 医疗保健是 +1.83%。沃森 9/2 −3.16%，没有跟上。",
+        "能源是油价，连续第二天。中国石油 9/1 平盘、9/2 −1.52%，中国海油 9/2 −2.14%。映射不是传导。",
+        "互联网第三名是苹果人事。AAPL +2.61%。亚马逊续跌。半导体 13 只全绿。",
+        "昨天加密货币第一名隔夜证伪。9/2 飞天诚信 −1.63%、四方精创 −0.45%，一日游成立。"
       ],
       caveats: [
-        { title: "原材料等权第一是林德单票", detail: "三只样本里 LIN +23.86%，龙头即最高。去掉它，GICS 第一名就不成立。" },
-        { title: "创新药样本只有 4 只", detail: "等权第一主要靠 MRNA +9.93%；去掉它，板块接近持平。" },
-        { title: "Moderna 没有匹配资讯", detail: "标题池没打到 Moderna，+9.93% 的原因不明，不能写成疫苗主线。" },
-        { title: "礼来收购 ≠ 板块上涨", detail: "龙头几乎平盘、跌破 MA10。把收购新闻当成创新药热，是标题错配。" },
-        { title: "疫苗映射是同概念", detail: "沃森 / 康泰对 Moderna 不是管线对标。9/1 康泰 +1.89% 对着的是更早的交易日。" },
-        { title: "能源样本只有 3 只", detail: "等权第二就是油价，不能当成板块轮动或避险风格。" },
-        { title: "A 股石油股 9/1 已证伪过一次", detail: "布伦特破 90 的前一晚，中国石油平盘。映射不是传导。" },
-        { title: "苹果第三名不是互联网普涨", detail: "四只里两红两绿；亚马逊续跌。供应链立讯 / 歌尔 9/1 还在绿。" },
-        { title: "加密货币没有 A 股对标", detail: "映射全是同概念。9/1 概念股大涨不能写成跟上 Coinbase。" },
-        { title: "半导体「最高」其实是跌得最少", detail: "AVGO −0.18% 只是 13 只里最不绿的；设备股 AMAT / LRCX 跌逾 3%。" },
-        { title: "特斯拉回吐不等于新能源车主线反转", detail: "周一 TSLA +5.51% 是单票，今夜 −3.22% 也是同一只。" },
+        { title: "旧稿原材料第一不成立", detail: "usLIN.N 没有 9/1 的连续日K。林德实际 −0.58%。" },
+        { title: "公用事业第三是跌得少", detail: "等权只有 +0.41%，三只仍跌破 MA10。" },
+        { title: "创新药样本只有 4 只", detail: "等权第一主要靠 MRNA +9.93%；去掉它接近持平。" },
+        { title: "Moderna 没有匹配资讯", detail: "+9.93% 的原因不明，不能写成疫苗主线。" },
+        { title: "礼来收购不等于板块上涨", detail: "龙头几乎平盘、跌破 MA10。" },
+        { title: "疫苗映射是同概念", detail: "沃森 9/2 −3.16%，康泰只 +0.15%。" },
+        { title: "能源样本只有 3 只", detail: "等权第一就是油价。" },
+        { title: "A 股石油股连续没跟", detail: "9/1 平盘、9/2 续跌。" },
+        { title: "加密货币没有 A 股对标", detail: "9/1 概念股大涨、9/2 回吐，都不是跟上 Coinbase。" },
         { title: "BYDDY 无日K", detail: "新能源车等权少一只，板块涨幅可能略有偏差。" }
       ],
       watch: [
+        { point: "不要沿用林德 +23.86%", check: "当日连续日K已是 −0.58%。看后面原材料是否仍不在 GICS 前三。" },
         { point: "Moderna 是否一日脉冲", check: "量能只有 0.80×。若隔夜吐回 MA10 下方，创新药第一名就不成立。" },
         { point: "礼来收购是否补涨", check: "标题在、股价平。若后续仍不红，收购不是隔夜主线。" },
-        { point: "WTI / 布伦特能否守住 90", check: "若油价回落，能源连续前三就是地缘脉冲；中国石油 9/1 已经没跟。" },
-        { point: "A 股石油股 9/2", check: "反应日若再平或绿，连续两夜油价都没有映射到对标股。" },
-        { point: "苹果人事是否一日游", check: "看 AAPL 是否守住 MA20、量能能否维持在均量之上。" },
-        { point: "加密概念 9/2 是否一日游", check: "飞天诚信、四方精创 9/1 大涨后，若高开低走，就是同概念炒作。" },
-        { point: "英伟达弱反抽是否结束", check: "NVDA 周一刚回到 MA10，今夜跌破 MA5。周五 −4.57% 还没修完。" },
-        { point: "甲骨文 −5.23% 是否扩散", check: "软件里只有 Salesforce 小红；若 ORCL 续跌，不要把 SaaS 写成抗跌。" },
-        { point: "特斯拉回吐质量", check: "周一 +5.51% 量能 1.79×，今夜 −3.22% 量能只 1.05×。看是否守住 MA20。" }
+        { point: "WTI 能否守住 90", check: "中国石油 9/1、9/2 都没跟。" },
+        { point: "苹果人事是否一日游", check: "看 AAPL 是否守住 MA20。" },
+        { point: "加密概念是否只是一日游", check: "9/2 飞天、四方已经回吐。" },
+        { point: "甲骨文 −5.23% 是否扩散", check: "软件里只有 Salesforce 小红。" }
       ],
       tickersOk: 77,
       tickersMiss: ["BYDDY"]
