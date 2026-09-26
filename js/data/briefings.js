@@ -2,10 +2,10 @@
 var DailyBriefings = (function () {
   var META = {
     timezone: "Asia/Shanghai",
-    savedAt: "2026-09-26 11:32",
+    savedAt: "2026-09-26 16:38",
     latestUsDate: "2026-09-25",
     mdDir: "briefings",
-    pageSnapshot: "archive/2026-09-26_1132.html"
+    pageSnapshot: "archive/2026-09-26_1638.html"
   };
 
   var DAYS = [

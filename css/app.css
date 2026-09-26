@@ -331,9 +331,16 @@ a.btn {
   border-left: 3px solid var(--gold);
 }
 
-.brief-lead strong {
-  display: block;
-  margin-bottom: 4px;
+.date-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.brief-summary {
+  margin: 0 0 10px;
+  line-height: 1.55;
 }
 
 .brief-stats {
@@ -1322,6 +1329,11 @@ textarea {
 
   .brief-toc button {
     min-height: 44px;
+  }
+
+  .date-head-actions {
+    align-self: stretch;
+    justify-content: space-between;
   }
 
   .date-head .btn {
