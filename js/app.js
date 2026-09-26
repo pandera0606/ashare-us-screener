@@ -52,10 +52,13 @@
     return dates.length ? dates[dates.length - 1] : null;
   }
 
+  var initialDate = latestDataDate() || "2026-08-26";
+  var initialParts = initialDate.split("-");
+
   var state = {
-    viewYear: 2026,
-    viewMonth: 7,
-    selectedDate: latestDataDate() || "2026-08-26",
+    viewYear: Number(initialParts[0]) || 2026,
+    viewMonth: (Number(initialParts[1]) || 1) - 1,
+    selectedDate: initialDate,
     selectedSectorId: null,
     selectedConceptId: null,
     selectedUsTicker: null,
@@ -1359,7 +1362,17 @@
       }
       if (action === "toggle-cal") {
         state.calDrawerOpen = !state.calDrawerOpen;
+        if (state.calDrawerOpen) {
+          var parts = String(state.selectedDate || "").split("-");
+          var year = Number(parts[0]);
+          var month = Number(parts[1]) - 1;
+          if (year && month >= 0 && month <= 11) {
+            state.viewYear = year;
+            state.viewMonth = month;
+          }
+        }
         renderDateBar();
+        renderCalendar();
         syncCalDrawer();
         return;
       }
